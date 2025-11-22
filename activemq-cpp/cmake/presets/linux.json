@@ -1,0 +1,158 @@
+{
+  "version": 7,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 27,
+    "patch": 0
+  },
+  "include": [
+    "base.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "linux",
+      "inherits": [
+        "base"
+      ],
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "environment": {
+        "VCPKG_FORCE_SYSTEM_BINARIES": "1"
+      }
+    },
+    {
+      "name": "vcpkg-x64-linux",
+      "hidden": true,
+      "environment": {
+        "VCPKG_DEFAULT_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "x64-linux-debug",
+      "inherits": [
+        "x64",
+        "linux",
+        "test",
+        "vcpkg-x64-linux",
+        "debug"
+      ]
+    },
+    {
+      "name": "x64-linux-release",
+      "inherits": [
+        "x64",
+        "linux",
+        "test",
+        "vcpkg-x64-linux",
+        "release"
+      ]
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-linux-debug",
+      "configurePreset": "x64-linux-debug"
+    },
+    {
+      "name": "x64-linux-release",
+      "configurePreset": "x64-linux-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "linux-test",
+      "hidden": true,
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "x64-linux-debug",
+      "inherits": "linux-test",
+      "configurePreset": "x64-linux-debug"
+    },
+    {
+      "name": "x64-linux-release",
+      "inherits": "linux-test",
+      "configurePreset": "x64-linux-release"
+    }
+  ],
+  "packagePresets": [
+    {
+      "name": "linux-common",
+      "hidden": true,
+      "generators": [
+        "TGZ",
+        "DEB",
+        "RPM"
+      ]
+    },
+    {
+      "name": "x64-linux-debug",
+      "configurePreset": "x64-linux-debug",
+      "inherits": [
+        "linux-common"
+      ]
+    },
+    {
+      "name": "x64-linux-release",
+      "configurePreset": "x64-linux-release",
+      "inherits": [
+        "linux-common"
+      ]
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "x64-linux-debug",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "x64-linux-debug"
+        },
+        {
+          "type": "build",
+          "name": "x64-linux-debug"
+        },
+        {
+          "type": "test",
+          "name": "x64-linux-debug"
+        },
+        {
+          "type": "package",
+          "name": "x64-linux-debug"
+        }
+      ]
+    },
+    {
+      "name": "x64-linux-release",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "x64-linux-release"
+        },
+        {
+          "type": "build",
+          "name": "x64-linux-release"
+        },
+        {
+          "type": "test",
+          "name": "x64-linux-release"
+        },
+        {
+          "type": "package",
+          "name": "x64-linux-release"
+        }
+      ]
+    }
+  ]
+}

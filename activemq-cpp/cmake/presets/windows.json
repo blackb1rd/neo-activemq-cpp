@@ -1,0 +1,200 @@
+{
+  "version": 10,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 31,
+    "patch": 0
+  },
+  "include": [
+    "base.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "windows",
+      "inherits": [
+        "base"
+      ],
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "vcpkg-x86-windows",
+      "hidden": true,
+      "environment": {
+        "VCPKG_DEFAULT_TRIPLET": "x86-windows"
+      }
+    },
+    {
+      "name": "vcpkg-x64-windows",
+      "hidden": true,
+      "environment": {
+        "VCPKG_DEFAULT_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "x86-windows-debug",
+      "inherits": [
+        "x86",
+        "windows",
+        "test",
+        "vcpkg-x86-windows",
+        "debug"
+      ]
+    },
+    {
+      "name": "x86-windows-release",
+      "inherits": [
+        "x86",
+        "windows",
+        "test",
+        "vcpkg-x86-windows",
+        "release"
+      ]
+    },
+    {
+      "name": "x64-windows-debug",
+      "inherits": [
+        "x64",
+        "windows",
+        "test",
+        "vcpkg-x64-windows",
+        "debug"
+      ]
+    },
+    {
+      "name": "x64-windows-release",
+      "inherits": [
+        "x64",
+        "windows",
+        "test",
+        "vcpkg-x64-windows",
+        "release"
+      ]
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x86-windows-debug",
+      "configurePreset": "x86-windows-debug"
+    },
+    {
+      "name": "x86-windows-release",
+      "configurePreset": "x86-windows-release"
+    },
+    {
+      "name": "x64-windows-debug",
+      "configurePreset": "x64-windows-debug"
+    },
+    {
+      "name": "x64-windows-release",
+      "configurePreset": "x64-windows-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-test",
+      "hidden": true,
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "x86-windows-debug",
+      "inherits": "windows-test",
+      "configurePreset": "x86-windows-debug"
+    },
+    {
+      "name": "x86-windows-release",
+      "inherits": "windows-test",
+      "configurePreset": "x86-windows-release"
+    },
+    {
+      "name": "x64-windows-debug",
+      "inherits": "windows-test",
+      "configurePreset": "x64-windows-debug"
+    },
+    {
+      "name": "x64-windows-release",
+      "inherits": "windows-test",
+      "configurePreset": "x64-windows-release"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "x86-windows-debug",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "x86-windows-debug"
+        },
+        {
+          "type": "build",
+          "name": "x86-windows-debug"
+        },
+        {
+          "type": "test",
+          "name": "x86-windows-debug"
+        }
+      ]
+    },
+    {
+      "name": "x86-windows-release",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "x86-windows-release"
+        },
+        {
+          "type": "build",
+          "name": "x86-windows-release"
+        },
+        {
+          "type": "test",
+          "name": "x86-windows-release"
+        }
+      ]
+    },
+    {
+      "name": "x64-windows-debug",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "x64-windows-debug"
+        },
+        {
+          "type": "build",
+          "name": "x64-windows-debug"
+        },
+        {
+          "type": "test",
+          "name": "x64-windows-debug"
+        }
+      ]
+    },
+    {
+      "name": "x64-windows-release",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "x64-windows-release"
+        },
+        {
+          "type": "build",
+          "name": "x64-windows-release"
+        },
+        {
+          "type": "test",
+          "name": "x64-windows-release"
+        }
+      ]
+    }
+  ]
+}

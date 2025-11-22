@@ -1,70 +1,13 @@
 {
-  "version": 3,
+  "version": 10,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 19,
+    "minor": 31,
     "patch": 0
   },
-  "configurePresets": [
-    {
-      "name": "default",
-      "hidden": true,
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/bin/build/${presetName}",
-      "installDir": "${sourceDir}/bin/install/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-      }
-    },
-    {
-      "name": "release",
-      "inherits": "default",
-      "description": "Release build using vcpkg toolchain"
-    },
-    {
-      "name": "debug",
-      "inherits": "default",
-      "description": "Debug build using vcpkg toolchain",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    }
-    ,
-    {
-      "name": "release-with-tests",
-      "inherits": "release",
-      "description": "Release build with tests enabled",
-      "cacheVariables": {
-        "AMQCPP_BUILD_TESTS": "ON"
-      }
-    },
-    {
-      "name": "debug-with-tests",
-      "inherits": "debug",
-      "description": "Debug build with tests enabled",
-      "cacheVariables": {
-        "AMQCPP_BUILD_TESTS": "ON"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "build-release",
-      "configurePreset": "release"
-    },
-    {
-      "name": "build-debug",
-      "configurePreset": "debug"
-    }
-    ,
-    {
-      "name": "build-release-with-tests",
-      "configurePreset": "release-with-tests"
-    },
-    {
-      "name": "build-debug-with-tests",
-      "configurePreset": "debug-with-tests"
-    }
+  "include": [
+    "cmake/presets/base.json",
+    "cmake/presets/linux.json",
+    "cmake/presets/windows.json"
   ]
 }

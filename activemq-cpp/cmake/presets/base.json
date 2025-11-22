@@ -1,0 +1,80 @@
+{
+  "version": 7,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 27,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/output/build/${presetName}",
+      "installDir": "${sourceDir}/output/install/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "OFF",
+        "CMAKE_CXX_EXTENSIONS": "OFF",
+        "CMAKE_CXX_STANDARD": "14",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/.cache/vcpkg/installed",
+        "VCPKG_INSTALL_OPTIONS": "--x-buildtrees-root=${sourceDir}/.cache/vcpkg/buildtrees"
+      },
+      "warnings": {
+        "deprecated": true,
+        "dev": false,
+        "uninitialized": false
+      },
+      "environment": {
+        "CCACHE_DIR": "${sourceDir}/.cache/ccache/",
+        "VCPKG_DOWNLOADS": "${sourceDir}/.cache/vcpkg/downloads"
+      }
+    },
+    {
+      "name": "test",
+      "hidden": true,
+      "cacheVariables": {
+        "WITH_TESTS": true
+      }
+    },
+    {
+      "name": "benchmark",
+      "hidden": true,
+      "cacheVariables": {
+        "WITH_BENCHMARK": true
+      }
+    },
+    {
+      "name": "x86",
+      "hidden": true,
+      "architecture": {
+        "strategy": "external",
+        "value": "x86"
+      }
+    },
+    {
+      "name": "x64",
+      "hidden": true,
+      "architecture": {
+        "strategy": "external",
+        "value": "x64"
+      }
+    },
+    {
+      "name": "debug",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ]
+}

@@ -9,7 +9,7 @@
       "kind": "git",
       "repository": "https://github.com/blackb1rd/vcpkg",
       "reference": "feature/activemq-cpp-openssl",
-      "baseline": "8fed74e7e10652b0444ab2e29c7daef29819747e",
+      "baseline": "626130cf45bf0186ab7624e108cbb04cc3a59cf7",
       "packages": [
         "apr"
       ]
