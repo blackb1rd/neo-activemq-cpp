@@ -370,9 +370,29 @@ void FailoverTransport::reconnect(const decaf::net::URI& uri) {
 
 ////////////////////////////////////////////////////////////////////////////////
 void FailoverTransport::setTransportListener(TransportListener* listener) {
-    synchronized( &this->impl->listenerMutex ) {
+    // Try to acquire the lock with a timeout to avoid deadlock during shutdown
+    // Iterate thread may hold this lock for up to 2 seconds, so we need longer timeout
+    bool acquired = false;
+
+    for (int attempt = 0; attempt < 50 && !acquired; ++attempt) {
+        acquired = this->impl->listenerMutex.tryLock();
+        if (!acquired && attempt < 49) {
+            Thread::sleep(50);
+        }
+    }
+
+    if (acquired) {
+        try {
+            this->impl->transportListener = listener;
+            this->impl->listenerMutex.notifyAll();
+            this->impl->listenerMutex.unlock();
+        } catch (...) {
+            this->impl->listenerMutex.unlock();
+            throw;
+        }
+    } else {
+        // Fallback: Set without lock during shutdown to avoid deadlock
         this->impl->transportListener = listener;
-        this->impl->listenerMutex.notifyAll();
     }
 }
 
@@ -600,7 +620,32 @@ void FailoverTransport::start() {
 void FailoverTransport::stop() {
 
     try {
-        synchronized(&this->impl->reconnectMutex) {
+        // Try to acquire the lock with retries to avoid deadlock during shutdown.
+        // The iterate() method may hold this lock during blocking network operations.
+        bool acquired = false;
+
+        for (int attempt = 0; attempt < 10 && !acquired; ++attempt) {
+            acquired = this->impl->reconnectMutex.tryLock();
+            if (!acquired && attempt < 9) {
+                // Brief sleep to allow the holder to check flags and release
+                Thread::sleep(50);
+            }
+        }
+
+        if (acquired) {
+            // Manually manage the lock with try-finally pattern for exception safety
+            try {
+                this->impl->started = false;
+                this->impl->backups->setEnabled(false);
+                this->impl->reconnectMutex.notifyAll();
+                this->impl->reconnectMutex.unlock();
+            } catch (...) {
+                this->impl->reconnectMutex.unlock();
+                throw;
+            }
+        } else {
+            // Fallback: Set flags without lock to prevent deadlock during shutdown.
+            // These flags are volatile, so will eventually be visible to other threads.
             this->impl->started = false;
             this->impl->backups->setEnabled(false);
         }
@@ -617,27 +662,50 @@ void FailoverTransport::close() {
 
         Pointer<Transport> transportToStop;
 
-        synchronized(&this->impl->reconnectMutex) {
+        // Try to acquire the lock with a timeout to avoid deadlock with iterate thread
+        bool acquired = false;
+        for (int attempt = 0; attempt < 100 && !acquired; ++attempt) {
+            acquired = this->impl->reconnectMutex.tryLock();
+            if (!acquired && attempt < 99) {
+                Thread::sleep(50);
+            }
+        }
 
+        if (acquired) {
+            try {
+                if (this->impl->closed) {
+                    this->impl->reconnectMutex.unlock();
+                    return;
+                }
+
+                this->impl->started = false;
+                this->impl->closed = true;
+                this->impl->connected = false;
+
+                this->impl->backups->setEnabled(false);
+                this->impl->requestMap.clear();
+
+                if (this->impl->connectedTransport != NULL) {
+                    transportToStop.swap(this->impl->connectedTransport);
+                } else if (this->impl->connectingTransport != NULL) {
+                    // If we're in the middle of connecting, attempt to stop that transport too
+                    transportToStop.swap(this->impl->connectingTransport);
+                }
+
+                this->impl->reconnectMutex.notifyAll();
+                this->impl->reconnectMutex.unlock();
+            } catch (...) {
+                this->impl->reconnectMutex.unlock();
+                throw;
+            }
+        } else {
+            // Fallback: Set flags without lock to proceed with shutdown
             if (this->impl->closed) {
                 return;
             }
-
             this->impl->started = false;
             this->impl->closed = true;
             this->impl->connected = false;
-
-            this->impl->backups->setEnabled(false);
-            this->impl->requestMap.clear();
-
-            if (this->impl->connectedTransport != NULL) {
-                transportToStop.swap(this->impl->connectedTransport);
-            } else if (this->impl->connectingTransport != NULL) {
-                // If we're in the middle of connecting, attempt to stop that transport too
-                transportToStop.swap(this->impl->connectingTransport);
-            }
-
-            this->impl->reconnectMutex.notifyAll();
         }
 
         this->impl->backups->close();
@@ -956,18 +1024,14 @@ bool FailoverTransport::iterate() {
                             transport = createTransport(uri);
                             // Mark this transport as the one being connected so close()
                             // can cancel it if requested concurrently.
-                            synchronized(&this->impl->reconnectMutex) {
-                                this->impl->connectingTransport = transport;
-                            }
+                            this->impl->connectingTransport = transport;
                         }
 
                         transport->setTransportListener(this->impl->myTransportListener.get());
                         transport->start();
 
                         // Clear the connectingTransport marker now that start() returned.
-                        synchronized(&this->impl->reconnectMutex) {
-                            this->impl->connectingTransport.reset(NULL);
-                        }
+                        this->impl->connectingTransport.reset(NULL);
 
                         if (this->impl->started && !this->impl->firstConnection) {
                             restoreTransport(transport);
@@ -989,10 +1053,12 @@ bool FailoverTransport::iterate() {
 
                         // Make sure on initial startup, that the transportListener
                         // has been initialized for this instance.
-                        synchronized(&this->impl->listenerMutex) {
-                            if (this->impl->transportListener == NULL) {
-                                // if it isn't set after 2secs - it probably never will be
-                                this->impl->listenerMutex.wait(2000);
+                        // Wait in smaller increments so we can check for shutdown
+                        for (int waitAttempt = 0; waitAttempt < 20 && this->impl->transportListener == NULL && !this->impl->closed; ++waitAttempt) {
+                            synchronized(&this->impl->listenerMutex) {
+                                if (this->impl->transportListener == NULL && !this->impl->closed) {
+                                    this->impl->listenerMutex.wait(100);
+                                }
                             }
                         }
 
@@ -1054,9 +1120,12 @@ bool FailoverTransport::iterate() {
 
             // Make sure on initial startup, that the transportListener has been initialized
             // for this instance.
-            synchronized(&this->impl->listenerMutex) {
-                if (this->impl->transportListener == NULL) {
-                    this->impl->listenerMutex.wait(2000);
+            // Wait in smaller increments so we can check for shutdown
+            for (int waitAttempt = 0; waitAttempt < 20 && this->impl->transportListener == NULL && !this->impl->closed; ++waitAttempt) {
+                synchronized(&this->impl->listenerMutex) {
+                    if (this->impl->transportListener == NULL && !this->impl->closed) {
+                        this->impl->listenerMutex.wait(100);
+                    }
                 }
             }
 

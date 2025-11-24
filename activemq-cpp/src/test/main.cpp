@@ -21,6 +21,7 @@
 #include <cppunit/BriefTestProgressListener.h>
 #include <cppunit/Outputter.h>
 #include <cppunit/XmlOutputter.h>
+#include <cppunit/CompilerOutputter.h>
 #include <cppunit/TestResult.h>
 #include <util/teamcity/TeamCityProgressListener.h>
 #include <activemq/util/Config.h>
@@ -194,6 +195,9 @@ int main( int argc, char **argv ) {
         // will delete the passed XmlOutputter for us.
         if( useXMLOutputter ) {
             runner.setOutputter( new CppUnit::XmlOutputter( &runner.result(), outputFile ) );
+        } else {
+            // Use CompilerOutputter for better error formatting with stack traces
+            runner.setOutputter( new CppUnit::CompilerOutputter( &runner.result(), std::cerr ) );
         }
 
         if( timeoutSeconds > 0 ) {

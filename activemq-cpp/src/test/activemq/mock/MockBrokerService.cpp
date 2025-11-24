@@ -118,13 +118,14 @@ namespace mock {
         virtual void run() {
             try {
 
-                started.countDown();
-
                 while (!done) {
 
                     MockTransport mock(this->wireFormat, this->responeBuilder);
 
                     server.reset(new ServerSocket(configuredPort));
+
+                    // Signal that server is now listening on the port
+                    started.countDown();
 
                     std::auto_ptr<Socket> socket;
                     try {

@@ -16,6 +16,7 @@
  */
 
 #include <decaf/internal/util/concurrent/Atomics.h>
+#include <atomic>
 
 using namespace decaf::internal;
 using namespace decaf::internal::util;
@@ -30,52 +31,61 @@ void Atomics::shutdown() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool Atomics::compareAndSet32(volatile int* target, int expect, int update ) {
-    return ::InterlockedCompareExchange((volatile LONG*)target, update, expect) == (unsigned int)expect;
+bool Atomics::compareAndSet32(volatile int* target, int expect, int update) {
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->compare_exchange_strong(expect, update);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 bool Atomics::compareAndSet(volatile void** target, void* expect, void* update) {
-    return ::InterlockedCompareExchangePointer((volatile PVOID*)target, (void*)update, (void*)expect ) == (void*)expect;
+    std::atomic<void*>* atomic_target = reinterpret_cast<std::atomic<void*>*>(const_cast<void**>(target));
+    return atomic_target->compare_exchange_strong(expect, update);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndSet(volatile int* target, int newValue) {
-    return ::InterlockedExchange((volatile LONG*)target, newValue);
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->exchange(newValue);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void* Atomics::getAndSet(volatile void** target, void* newValue) {
-    return InterlockedExchangePointer((volatile PVOID*)target, newValue);
+    std::atomic<void*>* atomic_target = reinterpret_cast<std::atomic<void*>*>(const_cast<void**>(target));
+    return atomic_target->exchange(newValue);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndIncrement(volatile int* target) {
-    return ::InterlockedIncrement((volatile LONG*)target) - 1;
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->fetch_add(1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndDecrement(volatile int* target) {
-    return ::InterlockedExchangeAdd((volatile LONG*)target, 0xFFFFFFFF);
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->fetch_sub(1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndAdd(volatile int* target, int delta) {
-    return ::InterlockedExchangeAdd((volatile LONG*)target, delta);
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->fetch_add(delta);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::addAndGet(volatile int* target, int delta) {
-    return ::InterlockedExchangeAdd((volatile LONG*)target, delta) + delta;
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->fetch_add(delta) + delta;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::incrementAndGet(volatile int* target) {
-    return ::InterlockedIncrement((volatile LONG*)target);
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->fetch_add(1) + 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::decrementAndGet(volatile int* target) {
-    return ::InterlockedExchangeAdd((volatile LONG*)target, 0xFFFFFFFF) - 1;
+    std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
+    return atomic_target->fetch_sub(1) - 1;
 }
-

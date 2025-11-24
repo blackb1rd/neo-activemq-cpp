@@ -15,11 +15,14 @@ list(FILTER DECAF_SOURCES EXCLUDE REGEX ".*/test/.*|.*/tests?/.*")
 # `internal/security/unix/*` implementations; ensure we only compile the
 # appropriate set for the target platform to avoid headers like <windows.h>
 # being required on Linux and POSIX sources on Windows.
+# Note: internal/util/concurrent/* now uses C++ standard library and is cross-platform
 if(WIN32)
   list(FILTER DECAF_SOURCES EXCLUDE REGEX ".*/internal/security/unix/.*")
   list(FILTER DECAF_SOURCES EXCLUDE REGEX ".*/internal/util/concurrent/unix/.*")
+  list(FILTER DECAF_SOURCES EXCLUDE REGEX ".*/internal/util/concurrent/windows/.*")
 else()
   list(FILTER DECAF_SOURCES EXCLUDE REGEX ".*/internal/security/windows/.*")
+  list(FILTER DECAF_SOURCES EXCLUDE REGEX ".*/internal/util/concurrent/unix/.*")
   list(FILTER DECAF_SOURCES EXCLUDE REGEX ".*/internal/util/concurrent/windows/.*")
 endif()
 
@@ -60,10 +63,12 @@ if(WIN32)
   target_compile_definitions(decaf PRIVATE _WIN32_WINNT=0x0601)
 endif()
 
-# Ensure POSIX threading is available on non-Windows platforms
+# Ensure C++ threading is available on all platforms
+find_package(Threads REQUIRED)
+target_link_libraries(decaf PRIVATE Threads::Threads)
+
+# Ensure POSIX threading macros are defined on non-Windows platforms for compatibility
 if(NOT WIN32)
-  find_package(Threads REQUIRED)
-  target_link_libraries(decaf PRIVATE Threads::Threads)
   # Define numeric macro so headers using `#if HAVE_PTHREAD_H` work correctly
   target_compile_definitions(decaf PUBLIC HAVE_PTHREAD_H=1)
 endif()

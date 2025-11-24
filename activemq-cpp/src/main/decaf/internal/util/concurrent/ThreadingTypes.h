@@ -20,12 +20,7 @@
 #define _DECAF_INTERNAL_UTIL_CONCURRENT_UNIX_THREADTYPES_H_
 
 #include <decaf/util/Config.h>
-
-#ifdef HAVE_PTHREAD_H
-#include <decaf/internal/util/concurrent/unix/PlatformDefs.h>
-#else
-#include <decaf/internal/util/concurrent/windows/PlatformDefs.h>
-#endif
+#include <decaf/internal/util/concurrent/PlatformDefs.h>
 
 namespace decaf{
 namespace lang{

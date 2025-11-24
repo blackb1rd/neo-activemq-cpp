@@ -1,0 +1,75 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug All Tests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/build/x86-windows-debug/src/test/Debug/test.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Failover Tests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/build/x86-windows-debug/src/test/test.exe",
+            "args": [
+                "activemq::transport::failover::FailoverTransportTest"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Specific Test",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/build/x86-windows-debug/src/test/test.exe",
+            "args": [
+                "-test",
+                "activemq::transport::failover::FailoverTransportTest::testConnectedToMockBroker"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Example",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/build/x86-windows-debug/src/examples/Debug/example.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Current Test File",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/build/x86-windows-debug/src/test/Debug/test.exe",
+            "args": [
+                "${input:testName}"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "testName",
+            "type": "promptString",
+            "description": "Enter the test name (e.g., activemq::transport::failover::FailoverTransportTest::testMethod)",
+            "default": ""
+        }
+    ]
+}

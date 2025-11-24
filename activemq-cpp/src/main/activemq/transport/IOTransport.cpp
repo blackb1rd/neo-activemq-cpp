@@ -204,8 +204,10 @@ void IOTransport::close() {
 
         ~Finalizer() {
             try {
-                target->join();
-                target.reset(NULL);
+                if (target != NULL) {
+                    target->join();
+                    target.reset(NULL);
+                }
             }
             DECAF_CATCHALL_NOTHROW()
         }

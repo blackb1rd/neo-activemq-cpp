@@ -86,8 +86,13 @@ Mutex::Mutex( const std::string& name ) : Synchronizable(), properties(NULL) {
 ////////////////////////////////////////////////////////////////////////////////
 Mutex::~Mutex() {
 
-    if (this->properties->monitor != NULL) {
-        Threading::returnMonitor(this->properties->monitor);
+    try {
+        if (this->properties->monitor != NULL) {
+            Threading::returnMonitor(this->properties->monitor);
+        }
+    } catch (...) {
+        // Suppress all exceptions in destructor to prevent std::terminate()
+        // This can happen if the monitor is still in use during abnormal shutdown
     }
 
     delete this->properties;
