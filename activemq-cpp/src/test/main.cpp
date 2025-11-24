@@ -38,6 +38,7 @@ int main( int argc, char **argv ) {
     int iterations = 1;
     std::ofstream outputFile;
     bool useXMLOutputter = false;
+    std::string testPath = "";
     std::auto_ptr<CppUnit::TestListener> listener( new CppUnit::BriefTestProgressListener );
 
     if( argc > 1 ) {
@@ -67,6 +68,25 @@ int main( int argc, char **argv ) {
 
                 std::ofstream outputFile( argv[++i] );
                 useXMLOutputter = true;
+            } else if( arg == "-test" ) {
+                if( ( i + 1 ) >= argc ) {
+                    std::cout << "-test requires a test name or path to be specified" << std::endl;
+                    return -1;
+                }
+                testPath = argv[++i];
+            } else if( arg == "-help" || arg == "--help" || arg == "-h" ) {
+                std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+                std::cout << "Options:" << std::endl;
+                std::cout << "  -runs <count>      Run tests multiple times" << std::endl;
+                std::cout << "  -test <name>       Run specific test or test suite" << std::endl;
+                std::cout << "                     Examples: -test decaf::lang::MathTest" << std::endl;
+                std::cout << "                               -test decaf::lang::MathTest::test_absD" << std::endl;
+                std::cout << "  -teamcity          Use TeamCity progress listener" << std::endl;
+                std::cout << "  -quiet             Suppress test progress output" << std::endl;
+                std::cout << "  -xml <file>        Output results in XML format" << std::endl;
+                std::cout << "  -help, --help, -h  Show this help message" << std::endl;
+                activemq::library::ActiveMQCPP::shutdownLibrary();
+                return 0;
             }
         }
     }
@@ -88,7 +108,7 @@ int main( int argc, char **argv ) {
             runner.setOutputter( new CppUnit::XmlOutputter( &runner.result(), outputFile ) );
         }
 
-        wasSuccessful = runner.run( "", false );
+        wasSuccessful = runner.run( testPath, false );
 
         if( useXMLOutputter ) {
             outputFile.close();
