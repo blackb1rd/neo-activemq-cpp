@@ -34,6 +34,9 @@
 #include <decaf/util/concurrent/CountDownLatch.h>
 #include <decaf/io/InputStream.h>
 #include <decaf/io/OutputStream.h>
+#include <decaf/io/EOFException.h>
+
+#include <mutex>
 
 using namespace activemq;
 using namespace activemq::mock;
@@ -59,6 +62,8 @@ namespace mock {
         volatile bool error;
         const int configuredPort;
         Pointer<ServerSocket> server;
+        Pointer<Socket> clientSocket;
+        std::mutex socketMutex;
         Pointer<OpenWireFormat> wireFormat;
         Pointer<OpenWireResponseBuilder> responeBuilder;
         CountDownLatch started;
@@ -66,7 +71,7 @@ namespace mock {
 
     public:
 
-        TcpServer() : Thread(), done(false), error(false), configuredPort(0), server(), wireFormat(),
+        TcpServer() : Thread(), done(false), error(false), configuredPort(0), server(), clientSocket(), wireFormat(),
                       responeBuilder(), started(1), rand() {
 
             Properties properties;
@@ -77,7 +82,7 @@ namespace mock {
             this->rand.setSeed(System::currentTimeMillis());
         }
 
-        TcpServer(int port) : Thread(), done(false), error(false), configuredPort(port), server(), wireFormat(),
+        TcpServer(int port) : Thread(), done(false), error(false), configuredPort(port), server(), clientSocket(), wireFormat(),
                               responeBuilder(), started(1), rand() {
 
             Properties properties;
@@ -111,7 +116,18 @@ namespace mock {
         void stop() {
             try {
                 done = true;
-                server->close();
+
+                // Don't close the client socket from this thread - it will cause
+                // a crash if another thread is blocked in a read operation.
+                // The timeout will allow the thread to exit gracefully.
+
+                // Only close the server socket to stop accepting new connections
+                std::lock_guard<std::mutex> lock(socketMutex);
+                if (server.get() != NULL) {
+                    try {
+                        server->close();
+                    } catch (...) {}
+                }
             } catch (...) {}
         }
 
@@ -127,21 +143,24 @@ namespace mock {
                     // Signal that server is now listening on the port
                     started.countDown();
 
-                    std::unique_ptr<Socket> socket;
+                    Socket* socketPtr = NULL;
                     try {
-                        socket.reset(server->accept());
+                        socketPtr = server->accept();
+
+                        std::lock_guard<std::mutex> lock(socketMutex);
+                        clientSocket.reset(socketPtr);
                     } catch (IOException& ioe) {
                         continue;
                     }
 
-                    socket->setSoLinger(false, 0);
+                    clientSocket->setSoLinger(false, 0);
 
                     Pointer<WireFormatInfo> preferred = wireFormat->getPreferedWireFormatInfo();
 
-                    OutputStream* os = socket->getOutputStream();
+                    OutputStream* os = clientSocket->getOutputStream();
                     DataOutputStream dataOut(os);
 
-                    InputStream* is = socket->getInputStream();
+                    InputStream* is = clientSocket->getInputStream();
                     DataInputStream dataIn(is);
 
                     wireFormat->marshal(preferred, &mock, &dataOut);
@@ -153,6 +172,17 @@ namespace mock {
 
                         if (response != NULL) {
                             wireFormat->marshal(response, &mock, &dataOut);
+                        }
+                    }
+
+                    // Clean up the client socket
+                    {
+                        std::lock_guard<std::mutex> lock(socketMutex);
+                        if (clientSocket.get() != NULL) {
+                            try {
+                                clientSocket->close();
+                            } catch (...) {}
+                            clientSocket.reset(NULL);
                         }
                     }
                 }

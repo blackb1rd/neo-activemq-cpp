@@ -26,6 +26,8 @@
 #include <decaf/util/concurrent/atomic/AtomicBoolean.h>
 
 #include <memory>
+#include <mutex>
+#include <atomic>
 
 using namespace std;
 using namespace activemq;
@@ -56,9 +58,10 @@ namespace tcp {
 
         int connectTimeout;
 
-        std::unique_ptr<decaf::net::Socket> socket;
+        std::shared_ptr<decaf::net::Socket> socket;
         std::unique_ptr<decaf::io::DataInputStream> dataInputStream;
         std::unique_ptr<decaf::io::DataOutputStream> dataOutputStream;
+        std::atomic<bool> isClosing;
 
         const decaf::net::URI& location;
 
@@ -78,6 +81,7 @@ namespace tcp {
             socket(),
             dataInputStream(),
             dataOutputStream(),
+            isClosing(false),
             location(location),
             outputBufferSize(8192),
             inputBufferSize(8192),
@@ -136,8 +140,13 @@ void TcpTransport::afterNextIsStopped() {
 ////////////////////////////////////////////////////////////////////////////////
 void TcpTransport::doClose() {
     try {
-        if (impl->socket.get() != NULL) {
-            impl->socket->close();
+        // Set atomic flag first to signal closing state
+        impl->isClosing.store(true, std::memory_order_release);
+
+        // Get a local copy of the shared pointer for safe access
+        std::shared_ptr<decaf::net::Socket> localSocket = impl->socket;
+        if (localSocket.get() != NULL) {
+            localSocket->close();
         }
     }
     AMQ_CATCH_RETHROW(IOException)

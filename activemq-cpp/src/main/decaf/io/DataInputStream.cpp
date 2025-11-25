@@ -462,13 +462,39 @@ void DataInputStream::readAllData(unsigned char* buffer, int length) {
 
     try {
 
+        if (buffer == NULL) {
+            throw IOException(__FILE__, __LINE__, "DataInputStream::readAllData - buffer is NULL");
+        }
+
+        if (length < 0) {
+            throw IOException(__FILE__, __LINE__, "DataInputStream::readAllData - length is negative");
+        }
+
+        if (length == 0) {
+            return;
+        }
+
+        if (inputStream == NULL) {
+            throw IOException(__FILE__, __LINE__, "DataInputStream::readAllData - InputStream is NULL");
+        }
+
         int n = 0;
         do {
-            int count = inputStream->read(buffer, length, n, length - n);
-            if (count == -1) {
-                throw EOFException(__FILE__, __LINE__, "DataInputStream::readLong - Reached EOF");
+            try {
+                int count = inputStream->read(buffer, length, n, length - n);
+                if (count == -1) {
+                    throw EOFException(__FILE__, __LINE__, "DataInputStream::readLong - Reached EOF");
+                }
+                n += count;
+            } catch (EOFException&) {
+                throw;
+            } catch (IOException&) {
+                throw;
+            } catch (...) {
+                // Catch Windows structured exceptions that occur when socket is closed
+                // Convert to proper IOException for clean error handling
+                throw IOException(__FILE__, __LINE__, "DataInputStream::readAllData - Socket closed during read");
             }
-            n += count;
         } while (n < length);
     }
     DECAF_CATCH_RETHROW(EOFException)
