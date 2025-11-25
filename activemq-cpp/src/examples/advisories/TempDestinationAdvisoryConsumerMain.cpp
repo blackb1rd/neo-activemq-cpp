@@ -50,10 +50,10 @@ int main( int argc AMQCPP_UNUSED, char* argv[] AMQCPP_UNUSED ) {
 
     {
         // Create the Connection
-        auto_ptr<cms::ConnectionFactory> connectionFactory(
+        std::unique_ptr<cms::ConnectionFactory> connectionFactory(
             cms::ConnectionFactory::createCMSConnectionFactory( brokerURI ) );
 
-        auto_ptr<cms::Connection> connection;
+        std::unique_ptr<cms::Connection> connection;
 
         // Create a Connection
         try{

@@ -49,8 +49,8 @@ void AsyncSenderTest::testAsyncSends() {
         cms::MessageProducer* producer = cmsProvider->getProducer();
         producer->setDeliveryMode( DeliveryMode::NON_PERSISTENT );
 
-        auto_ptr<cms::TextMessage> txtMessage( session->createTextMessage( "TEST MESSAGE" ) );
-        auto_ptr<cms::BytesMessage> bytesMessage( session->createBytesMessage() );
+        std::unique_ptr<cms::TextMessage> txtMessage( session->createTextMessage( "TEST MESSAGE" ) );
+        std::unique_ptr<cms::BytesMessage> bytesMessage( session->createBytesMessage() );
 
         for( unsigned int i = 0; i < IntegrationCommon::defaultMsgCount; ++i ) {
             producer->send( txtMessage.get() );
@@ -70,3 +70,4 @@ void AsyncSenderTest::testAsyncSends() {
         CPPUNIT_ASSERT( false );
     }
 }
+

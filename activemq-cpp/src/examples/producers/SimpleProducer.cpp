@@ -90,7 +90,7 @@ public:
         try {
 
             // Create a ConnectionFactory
-            auto_ptr<ActiveMQConnectionFactory> connectionFactory(
+            std::unique_ptr<ActiveMQConnectionFactory> connectionFactory(
                 new ActiveMQConnectionFactory( brokerURI ) );
 
             // Create a Connection
@@ -244,3 +244,4 @@ int main(int argc AMQCPP_UNUSED, char* argv[] AMQCPP_UNUSED) {
 
     activemq::library::ActiveMQCPP::shutdownLibrary();
 }
+

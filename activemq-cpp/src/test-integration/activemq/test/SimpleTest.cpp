@@ -49,8 +49,8 @@ void SimpleTest::testAutoAck() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
-    auto_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
 
     for (unsigned int i = 0; i < IntegrationCommon::defaultMsgCount; ++i) {
         producer->send(txtMessage.get());
@@ -83,8 +83,8 @@ void SimpleTest::testClientAck() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
-    auto_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
 
     for (unsigned int i = 0; i < IntegrationCommon::defaultMsgCount; ++i) {
         producer->send(txtMessage.get());
@@ -114,7 +114,7 @@ void SimpleTest::testProducerWithNullDestination() {
     cms::MessageProducer* producer = cmsProvider->getNoDestProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     producer->send(cmsProvider->getDestination(), txtMessage.get());
 
@@ -136,7 +136,7 @@ void SimpleTest::testProducerSendWithNullDestination() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Should Throw an InvalidDestinationException",
         producer->send( NULL, txtMessage.get() ), cms::InvalidDestinationException);
@@ -159,8 +159,8 @@ void SimpleTest::testProducerSendToNonDefaultDestination() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
-    auto_ptr<cms::Destination> destination(session->createTemporaryTopic());
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::Destination> destination(session->createTemporaryTopic());
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Should Throw an UnsupportedOperationException",
         producer->send(destination.get(), txtMessage.get()), cms::UnsupportedOperationException);
@@ -175,12 +175,12 @@ void SimpleTest::testSyncReceive() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     // Send some text messages
     producer->send(txtMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 }
 
@@ -196,12 +196,12 @@ void SimpleTest::testSyncReceiveClientAck() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     // Send some text messages
     producer->send(txtMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 }
 
@@ -209,32 +209,32 @@ void SimpleTest::testSyncReceiveClientAck() {
 void SimpleTest::testMultipleConnections() {
 
     // Create CMS Object for Comms
-    auto_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(cmsProvider->getBrokerURL()));
-    auto_ptr<cms::Connection> connection1(factory->createConnection());
+    std::unique_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(cmsProvider->getBrokerURL()));
+    std::unique_ptr<cms::Connection> connection1(factory->createConnection());
     connection1->start();
 
-    auto_ptr<cms::Connection> connection2(factory->createConnection());
+    std::unique_ptr<cms::Connection> connection2(factory->createConnection());
     connection2->start();
 
     CPPUNIT_ASSERT(connection1->getClientID() != connection2->getClientID());
 
-    auto_ptr<cms::Session> session1(connection1->createSession());
-    auto_ptr<cms::Session> session2(connection1->createSession());
+    std::unique_ptr<cms::Session> session1(connection1->createSession());
+    std::unique_ptr<cms::Session> session2(connection1->createSession());
 
-    auto_ptr<cms::Topic> topic(session1->createTopic(UUID::randomUUID().toString()));
+    std::unique_ptr<cms::Topic> topic(session1->createTopic(UUID::randomUUID().toString()));
 
-    auto_ptr<cms::MessageConsumer> consumer1(session1->createConsumer(topic.get()));
-    auto_ptr<cms::MessageConsumer> consumer2(session2->createConsumer(topic.get()));
+    std::unique_ptr<cms::MessageConsumer> consumer1(session1->createConsumer(topic.get()));
+    std::unique_ptr<cms::MessageConsumer> consumer2(session2->createConsumer(topic.get()));
 
-    auto_ptr<cms::MessageProducer> producer(session2->createProducer(topic.get()));
+    std::unique_ptr<cms::MessageProducer> producer(session2->createProducer(topic.get()));
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> textMessage(session2->createTextMessage());
+    std::unique_ptr<cms::TextMessage> textMessage(session2->createTextMessage());
 
     // Send some text messages
     producer->send(textMessage.get());
 
-    auto_ptr<cms::Message> message(consumer1->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer1->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     message.reset(consumer2->receive(2000));
@@ -254,23 +254,23 @@ void SimpleTest::testMultipleConnections() {
 void SimpleTest::testMultipleSessions() {
 
     // Create CMS Object for Comms
-    auto_ptr<cms::Session> session1(cmsProvider->getConnection()->createSession());
-    auto_ptr<cms::Session> session2(cmsProvider->getConnection()->createSession());
+    std::unique_ptr<cms::Session> session1(cmsProvider->getConnection()->createSession());
+    std::unique_ptr<cms::Session> session2(cmsProvider->getConnection()->createSession());
 
-    auto_ptr<cms::Topic> topic(session1->createTopic(UUID::randomUUID().toString()));
+    std::unique_ptr<cms::Topic> topic(session1->createTopic(UUID::randomUUID().toString()));
 
-    auto_ptr<cms::MessageConsumer> consumer1(session1->createConsumer(topic.get()));
-    auto_ptr<cms::MessageConsumer> consumer2(session2->createConsumer(topic.get()));
+    std::unique_ptr<cms::MessageConsumer> consumer1(session1->createConsumer(topic.get()));
+    std::unique_ptr<cms::MessageConsumer> consumer2(session2->createConsumer(topic.get()));
 
-    auto_ptr<cms::MessageProducer> producer(session2->createProducer(topic.get()));
+    std::unique_ptr<cms::MessageProducer> producer(session2->createProducer(topic.get()));
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> textMessage(session2->createTextMessage());
+    std::unique_ptr<cms::TextMessage> textMessage(session2->createTextMessage());
 
     // Send some text messages
     producer->send(textMessage.get());
 
-    auto_ptr<cms::Message> message(consumer1->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer1->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     message.reset(consumer2->receive(2000));
@@ -290,15 +290,15 @@ void SimpleTest::testMultipleSessions() {
 void SimpleTest::testReceiveAlreadyInQueue() {
 
     // Create CMS Object for Comms
-    auto_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(cmsProvider->getBrokerURL()));
-    auto_ptr<cms::Connection> connection(factory->createConnection());
+    std::unique_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(cmsProvider->getBrokerURL()));
+    std::unique_ptr<cms::Connection> connection(factory->createConnection());
 
-    auto_ptr<cms::Session> session(connection->createSession());
-    auto_ptr<cms::Topic> topic(session->createTopic(UUID::randomUUID().toString()));
-    auto_ptr<cms::MessageConsumer> consumer(session->createConsumer(topic.get()));
-    auto_ptr<cms::MessageProducer> producer(session->createProducer(topic.get()));
+    std::unique_ptr<cms::Session> session(connection->createSession());
+    std::unique_ptr<cms::Topic> topic(session->createTopic(UUID::randomUUID().toString()));
+    std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(topic.get()));
+    std::unique_ptr<cms::MessageProducer> producer(session->createProducer(topic.get()));
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
-    auto_ptr<cms::TextMessage> textMessage(session->createTextMessage());
+    std::unique_ptr<cms::TextMessage> textMessage(session->createTextMessage());
 
     // Send some text messages
     producer->send(textMessage.get());
@@ -307,7 +307,7 @@ void SimpleTest::testReceiveAlreadyInQueue() {
 
     connection->start();
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     // Clean up if we can
@@ -321,9 +321,9 @@ void SimpleTest::testReceiveAlreadyInQueue() {
 ////////////////////////////////////////////////////////////////////////////////
 void SimpleTest::testQuickCreateAndDestroy() {
 
-    auto_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(cmsProvider->getBrokerURL()));
-    auto_ptr<cms::Connection> connection(factory->createConnection());
-    auto_ptr<cms::Session> session(connection->createSession());
+    std::unique_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(cmsProvider->getBrokerURL()));
+    std::unique_ptr<cms::Connection> connection(factory->createConnection());
+    std::unique_ptr<cms::Session> session(connection->createSession());
 
     session.reset( NULL);
     connection.reset( NULL);
@@ -352,7 +352,7 @@ void SimpleTest::testBytesMessageSendRecv() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
+    std::unique_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
 
     bytesMessage->writeBoolean(true);
     bytesMessage->writeByte(127);
@@ -363,7 +363,7 @@ void SimpleTest::testBytesMessageSendRecv() {
     // Send some text messages
     producer->send(bytesMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Should throw an ActiveMQExceptio", message->setStringProperty("FOO", "BAR"), cms::CMSException);
@@ -442,7 +442,7 @@ void SimpleTest::testBytesMessageSendRecvAsync() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
+    std::unique_ptr<cms::BytesMessage> bytesMessage(session->createBytesMessage());
 
     bytesMessage->writeBoolean(true);
     bytesMessage->writeByte(127);
@@ -475,3 +475,4 @@ void SimpleTest::testLibraryInitShutdownInit() {
         cmsProvider.reset(new util::CMSProvider(getBrokerURL()));
     }
 }
+

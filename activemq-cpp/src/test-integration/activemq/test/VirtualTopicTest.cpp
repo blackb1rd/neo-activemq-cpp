@@ -69,17 +69,17 @@ void VirtualTopicTest::testRunnerSync(cms::Session::AcknowledgeMode mode) {
     // Create CMS Object for Comms
     cms::Session* session(cmsProvider->getSession());
 
-    auto_ptr<cms::Destination> topic(session->createTopic(PRODUCER_DESTINATION_NAME));
-    auto_ptr<cms::Destination> queueA(session->createQueue(CONSUMER_A_DESTINATION_NAME));
-    auto_ptr<cms::Destination> queueB(session->createQueue(CONSUMER_B_DESTINATION_NAME));
+    std::unique_ptr<cms::Destination> topic(session->createTopic(PRODUCER_DESTINATION_NAME));
+    std::unique_ptr<cms::Destination> queueA(session->createQueue(CONSUMER_A_DESTINATION_NAME));
+    std::unique_ptr<cms::Destination> queueB(session->createQueue(CONSUMER_B_DESTINATION_NAME));
 
-    auto_ptr<cms::MessageProducer> producer(session->createProducer(topic.get()));
-    auto_ptr<cms::MessageConsumer> consumerA(session->createConsumer(queueA.get()));
-    auto_ptr<cms::MessageConsumer> consumerB(session->createConsumer(queueB.get()));
+    std::unique_ptr<cms::MessageProducer> producer(session->createProducer(topic.get()));
+    std::unique_ptr<cms::MessageConsumer> consumerA(session->createConsumer(queueA.get()));
+    std::unique_ptr<cms::MessageConsumer> consumerB(session->createConsumer(queueB.get()));
 
     producer->setDeliveryMode(cms::DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     for (std::size_t i = 0; i < IntegrationCommon::defaultMsgCount; ++i) {
         producer->send(txtMessage.get());
@@ -91,13 +91,13 @@ void VirtualTopicTest::testRunnerSync(cms::Session::AcknowledgeMode mode) {
 
     for (std::size_t i = 0; i < IntegrationCommon::defaultMsgCount; ++i) {
 
-        auto_ptr<cms::Message> messageA(consumerA->receive(2000));
+        std::unique_ptr<cms::Message> messageA(consumerA->receive(2000));
         CPPUNIT_ASSERT(messageA.get() != NULL);
         if (cms::Session::CLIENT_ACKNOWLEDGE == mode) {
             messageA->acknowledge();
         }
 
-        auto_ptr<cms::Message> messageB(consumerB->receive(2000));
+        std::unique_ptr<cms::Message> messageB(consumerB->receive(2000));
         CPPUNIT_ASSERT(messageB.get() != NULL);
         if (cms::Session::CLIENT_ACKNOWLEDGE == mode) {
             messageB->acknowledge();
@@ -108,3 +108,4 @@ void VirtualTopicTest::testRunnerSync(cms::Session::AcknowledgeMode mode) {
         session->commit();
     }
 }
+

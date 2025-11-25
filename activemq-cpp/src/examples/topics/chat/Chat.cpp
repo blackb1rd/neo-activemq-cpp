@@ -69,7 +69,7 @@ void Chat::onException( const cms::CMSException& ex ) {
 ////////////////////////////////////////////////////////////////////////////////
 void Chat::run() {
 
-    auto_ptr<cms::ConnectionFactory> connectionFactory;
+    std::unique_ptr<cms::ConnectionFactory> connectionFactory;
 
     // Create a connection.
     try {
@@ -157,7 +157,7 @@ void Chat::run() {
 
                     try {
 
-                        auto_ptr<TextMessage> message(
+                        std::unique_ptr<TextMessage> message(
                             this->session->createTextMessage( text ) );
                         this->producer->send( message.get() );
 
@@ -284,3 +284,4 @@ int main( int argc, char *argv[] ) {
 
     return 0;
 }
+

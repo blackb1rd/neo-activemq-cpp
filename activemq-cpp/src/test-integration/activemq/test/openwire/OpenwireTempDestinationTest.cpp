@@ -47,8 +47,8 @@ namespace openwire {
                       public decaf::lang::Runnable {
     private:
 
-        auto_ptr<CMSProvider> cmsProvider;
-        auto_ptr<cms::MessageConsumer> tempTopicConsumer;
+        std::unique_ptr<CMSProvider> cmsProvider;
+        std::unique_ptr<cms::MessageConsumer> tempTopicConsumer;
 
         unsigned int numReceived;
         unsigned int messageCount;
@@ -90,7 +90,7 @@ namespace openwire {
 
             try {
 
-                auto_ptr<cms::TextMessage> message(
+                std::unique_ptr<cms::TextMessage> message(
                     this->cmsProvider->getSession()->createTextMessage() );
                 message->setCMSReplyTo( this->cmsProvider->getTempDestination() );
 
@@ -121,7 +121,7 @@ namespace openwire {
     class Responder : public cms::MessageListener {
     private:
 
-        auto_ptr<CMSProvider> cmsProvider;
+        std::unique_ptr<CMSProvider> cmsProvider;
 
         unsigned int numReceived;
         unsigned int messageCount;
@@ -155,7 +155,7 @@ namespace openwire {
 
                 if( message->getCMSReplyTo() != NULL ) {
 
-                    auto_ptr<cms::Message> response(
+                    std::unique_ptr<cms::Message> response(
                         cmsProvider->getSession()->createMessage() );
 
                     // Send it back to the replyTo Destination
@@ -180,18 +180,18 @@ void OpenwireTempDestinationTest::testBasics() {
 
     try{
 
-        auto_ptr<cms::MessageConsumer> tempConsumer(
+        std::unique_ptr<cms::MessageConsumer> tempConsumer(
             cmsProvider->getSession()->createConsumer(
                 cmsProvider->getTempDestination() ) );
 
-        auto_ptr<TextMessage> message(
+        std::unique_ptr<TextMessage> message(
             cmsProvider->getSession()->createTextMessage() );
 
         // Fire a message to the temporary topic
         cmsProvider->getNoDestProducer()->send(
             cmsProvider->getTempDestination(), message.get() );
 
-        auto_ptr<cms::Message> received( tempConsumer->receive( 3000 ) );
+        std::unique_ptr<cms::Message> received( tempConsumer->receive( 3000 ) );
 
         CPPUNIT_ASSERT( received.get() != NULL );
     }
@@ -204,9 +204,9 @@ void OpenwireTempDestinationTest::testTwoConnections() {
 
     std::string destination = "REQUEST-TOPIC";
 
-    auto_ptr<Requester> requester(
+    std::unique_ptr<Requester> requester(
         new Requester( cmsProvider->getBrokerURL(), destination, 10 ) );
-    auto_ptr<Responder> responder(
+    std::unique_ptr<Responder> responder(
         new Responder( cmsProvider->getBrokerURL(), destination, 10 ) );
 
     // Launch the Consumers in new Threads.
@@ -434,3 +434,4 @@ void OpenwireTempDestinationTest::testCloseConnectionWithManyTempDests() {
     tempQueues.clear();
     producers.clear();
 }
+

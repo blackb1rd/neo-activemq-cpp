@@ -51,12 +51,12 @@ void MapMessageTest::testEmptyMapSendReceive() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
+    std::unique_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
 
     // Send some text messages
     producer->send(mapMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::MapMessage* recvMapMessage = dynamic_cast<MapMessage*>(message.get());
@@ -73,7 +73,7 @@ void MapMessageTest::testMapWithEmptyStringValue() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
+    std::unique_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
 
     mapMessage->setString("String1", "");
     mapMessage->setString("String2", "value");
@@ -81,7 +81,7 @@ void MapMessageTest::testMapWithEmptyStringValue() {
     // Send some text messages
     producer->send(mapMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::MapMessage* recvMapMessage = dynamic_cast<MapMessage*>(message.get());
@@ -102,14 +102,14 @@ void MapMessageTest::testMapWithSingleCharEntry() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
+    std::unique_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
 
     mapMessage->setChar("Char1", 'a');
 
     // Send some text messages
     producer->send(mapMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::MapMessage* recvMapMessage = dynamic_cast<MapMessage*>(message.get());
@@ -128,7 +128,7 @@ void MapMessageTest::testMapWithCharAndStringEntry() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
+    std::unique_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
 
     mapMessage->setChar("Char1", 'a');
     mapMessage->setString("String1", "string");
@@ -136,7 +136,7 @@ void MapMessageTest::testMapWithCharAndStringEntry() {
     // Send some text messages
     producer->send(mapMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::MapMessage* recvMapMessage = dynamic_cast<MapMessage*>(message.get());
@@ -158,7 +158,7 @@ void MapMessageTest::testMapSetEmptyBytesVector() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
+    std::unique_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
 
     std::vector<unsigned char> bytes;
 
@@ -167,7 +167,7 @@ void MapMessageTest::testMapSetEmptyBytesVector() {
     // Send some text messages
     producer->send(mapMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::MapMessage* recvMapMessage = dynamic_cast<MapMessage*>(message.get());
@@ -175,3 +175,4 @@ void MapMessageTest::testMapSetEmptyBytesVector() {
     CPPUNIT_ASSERT(recvMapMessage->itemExists("BYTES") == true);
     CPPUNIT_ASSERT(recvMapMessage->getBytes("BYTES").empty() == true);
 }
+

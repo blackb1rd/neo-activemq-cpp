@@ -99,7 +99,7 @@ void MessageCompressionTest::testTextMessageCompression() {
     // Send some text messages
     producer->send( sent.get() );
 
-    auto_ptr<cms::Message> message( consumer->receive( 2000 ) );
+    std::unique_ptr<cms::Message> message( consumer->receive( 2000 ) );
     CPPUNIT_ASSERT( message.get() != NULL );
 
     TextMessage* recvd = dynamic_cast<TextMessage*>( message.get() );
@@ -148,7 +148,7 @@ void MessageCompressionTest::testBytesMessageCompression() {
     // Send some text messages
     producer->send( sent.get() );
 
-    auto_ptr<cms::Message> message( consumer->receive( 2000 ) );
+    std::unique_ptr<cms::Message> message( consumer->receive( 2000 ) );
     CPPUNIT_ASSERT( message.get() != NULL );
 
     BytesMessage* recvd = dynamic_cast<BytesMessage*>( message.get() );
@@ -209,7 +209,7 @@ void MessageCompressionTest::testStreamMessageCompression() {
     // Send some text messages
     producer->send( sent.get() );
 
-    auto_ptr<cms::Message> message( consumer->receive( 2000 ) );
+    std::unique_ptr<cms::Message> message( consumer->receive( 2000 ) );
     CPPUNIT_ASSERT( message.get() != NULL );
 
     StreamMessage* recvd = dynamic_cast<StreamMessage*>( message.get() );
@@ -270,7 +270,7 @@ void MessageCompressionTest::testMapMessageCompression() {
     // Send some text messages
     producer->send( sent.get() );
 
-    auto_ptr<cms::Message> message( consumer->receive( 2000 ) );
+    std::unique_ptr<cms::Message> message( consumer->receive( 2000 ) );
     CPPUNIT_ASSERT( message.get() != NULL );
 
     MapMessage* recvd = dynamic_cast<MapMessage*>( message.get() );
@@ -295,3 +295,4 @@ void MessageCompressionTest::testMapMessageCompression() {
     CPPUNIT_ASSERT_MESSAGE( "Received message was not an AMQ message type", amqMsg != NULL );
     CPPUNIT_ASSERT_MESSAGE( "Received message was not compressed.", amqMsg->isCompressed() );
 }
+

@@ -201,7 +201,7 @@ void ActiveMQConnectionFactoryTest::testExceptionWithPortOutOfRange() {
 
         ActiveMQConnectionFactory connectionFactory( URI );
 
-        auto_ptr<cms::Connection> connection(
+        std::unique_ptr<cms::Connection> connection(
             connectionFactory.createConnection() );
 
         CPPUNIT_ASSERT( false );
@@ -219,7 +219,7 @@ void ActiveMQConnectionFactoryTest::testExceptionOnCreate() {
 
         ActiveMQConnectionFactory connectionFactory( URI );
 
-        auto_ptr<cms::Connection> connection(
+        std::unique_ptr<cms::Connection> connection(
             connectionFactory.createConnection() );
 
         CPPUNIT_ASSERT( false );
@@ -343,3 +343,4 @@ void ActiveMQConnectionFactoryTest::testURIOptionsProcessing() {
 
     CPPUNIT_ASSERT( false );
 }
+

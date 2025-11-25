@@ -60,12 +60,12 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetch() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     // Send some text messages
     producer->send(txtMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(1000));
+    std::unique_ptr<cms::Message> message(consumer->receive(1000));
     CPPUNIT_ASSERT(message.get() != NULL);
 }
 
@@ -84,12 +84,12 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetch2() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     // Send some text messages
     producer->send(txtMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(1000));
+    std::unique_ptr<cms::Message> message(consumer->receive(1000));
     CPPUNIT_ASSERT(message.get() != NULL);
 }
 
@@ -106,7 +106,7 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetchAndNoMessage() {
     cms::MessageConsumer* consumer = cmsProvider->getConsumer();
 
     // Should be no message and no exceptions
-    auto_ptr<cms::Message> message(consumer->receiveNoWait());
+    std::unique_ptr<cms::Message> message(consumer->receiveNoWait());
     CPPUNIT_ASSERT(message.get() == NULL);
 
     // Should be no message and no exceptions
@@ -131,7 +131,7 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetchAndNoMessage2() {
     cms::MessageConsumer* consumer = cmsProvider->getConsumer();
 
     // Should be no message and no exceptions
-    auto_ptr<cms::Message> message(consumer->receiveNoWait());
+    std::unique_ptr<cms::Message> message(consumer->receiveNoWait());
     CPPUNIT_ASSERT(message.get() == NULL);
 
     // Should be no message and no exceptions
@@ -166,7 +166,7 @@ void OpenwireSimpleTest::testMapMessageSendToQueue() {
     double doubleValue = 654564.654654;
     std::string stringValue = "The test string";
 
-    auto_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
+    std::unique_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
 
     mapMessage->setString("stringKey", stringValue);
     mapMessage->setBoolean("boolKey", booleanValue);
@@ -189,7 +189,7 @@ void OpenwireSimpleTest::testMapMessageSendToQueue() {
     // Send some text messages
     producer->send(mapMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::MapMessage* recvMapMessage = dynamic_cast<MapMessage*>(message.get());
@@ -225,7 +225,7 @@ void OpenwireSimpleTest::testMapMessageSendToTopic() {
     double doubleValue = 654564.654654;
     std::string stringValue = "The test string";
 
-    auto_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
+    std::unique_ptr<cms::MapMessage> mapMessage(session->createMapMessage());
 
     mapMessage->setString("stringKey", stringValue);
     mapMessage->setBoolean("boolKey", booleanValue);
@@ -248,7 +248,7 @@ void OpenwireSimpleTest::testMapMessageSendToTopic() {
     // Send some text messages
     producer->send(mapMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::MapMessage* recvMapMessage = dynamic_cast<MapMessage*>(message.get());
@@ -279,12 +279,12 @@ void OpenwireSimpleTest::testDestroyDestination() {
         cms::MessageProducer* producer = cmsProvider->getProducer();
         producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-        auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+        std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
         // Send some text messages
         producer->send(txtMessage.get());
 
-        auto_ptr<cms::Message> message(consumer->receive(1000));
+        std::unique_ptr<cms::Message> message(consumer->receive(1000));
         CPPUNIT_ASSERT(message.get() != NULL);
 
         ActiveMQConnection* connection = dynamic_cast<ActiveMQConnection*>(cmsProvider->getConnection());
@@ -326,7 +326,7 @@ void OpenwireSimpleTest::tesstStreamMessage() {
     double doubleValue = 654564.654654;
     std::string stringValue = "The test string";
 
-    auto_ptr<cms::StreamMessage> streamMessage(session->createStreamMessage());
+    std::unique_ptr<cms::StreamMessage> streamMessage(session->createStreamMessage());
 
     streamMessage->writeString(stringValue);
     streamMessage->writeBoolean(booleanValue);
@@ -350,7 +350,7 @@ void OpenwireSimpleTest::tesstStreamMessage() {
     // Send some text messages
     producer->send(streamMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(2000));
+    std::unique_ptr<cms::Message> message(consumer->receive(2000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     cms::StreamMessage* rcvStreamMessage = dynamic_cast<StreamMessage*>(message.get());
@@ -375,7 +375,7 @@ void OpenwireSimpleTest::testMessageIdSetOnSend() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::Message> message(session->createMessage());
+    std::unique_ptr<cms::Message> message(session->createMessage());
     producer->send(message.get());
 
     CPPUNIT_ASSERT(message->getCMSMessageID() != "");
@@ -396,12 +396,12 @@ void OpenwireSimpleTest::testReceiveWithSessionSyncDispatch() {
     cms::MessageProducer* producer = cmsProvider->getProducer();
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
+    std::unique_ptr<cms::TextMessage> txtMessage(session->createTextMessage("TEST MESSAGE"));
 
     // Send some text messages
     producer->send(txtMessage.get());
 
-    auto_ptr<cms::Message> message(consumer->receive(1000));
+    std::unique_ptr<cms::Message> message(consumer->receive(1000));
     CPPUNIT_ASSERT(message.get() != NULL);
 }
 
@@ -409,27 +409,27 @@ void OpenwireSimpleTest::testReceiveWithSessionSyncDispatch() {
 void OpenwireSimpleTest::testWithZeroConsumerPrefetchAndZeroRedelivery() {
 
     ActiveMQConnectionFactory factory(getBrokerURL());
-    auto_ptr<cms::Connection> connection(factory.createConnection());
+    std::unique_ptr<cms::Connection> connection(factory.createConnection());
 
     connection->start();
 
     {
-        auto_ptr<cms::Session> session(connection->createSession(cms::Session::AUTO_ACKNOWLEDGE));
-        auto_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchAndZeroRedelivery"));
-        auto_ptr<cms::MessageProducer> producer(session->createProducer(queue.get()));
+        std::unique_ptr<cms::Session> session(connection->createSession(cms::Session::AUTO_ACKNOWLEDGE));
+        std::unique_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchAndZeroRedelivery"));
+        std::unique_ptr<cms::MessageProducer> producer(session->createProducer(queue.get()));
 
-        auto_ptr<cms::Message> message(session->createTextMessage("Hello"));
+        std::unique_ptr<cms::Message> message(session->createTextMessage("Hello"));
         producer->send(message.get());
         producer->close();
         session->close();
     }
 
     {
-        auto_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
-        auto_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchAndZeroRedelivery"));
-        auto_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
+        std::unique_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
+        std::unique_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchAndZeroRedelivery"));
+        std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
 
-        auto_ptr<cms::Message> message(consumer->receive(5000));
+        std::unique_ptr<cms::Message> message(consumer->receive(5000));
         CPPUNIT_ASSERT(message.get() != NULL);
 
         session->rollback();
@@ -445,11 +445,11 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetchAndZeroRedelivery() {
     amqConnection->getRedeliveryPolicy()->setMaximumRedeliveries(0);
     amqConnection->getPrefetchPolicy()->setQueuePrefetch(0);
 
-    auto_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
-    auto_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchAndZeroRedelivery"));
-    auto_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
+    std::unique_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
+    std::unique_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchAndZeroRedelivery"));
+    std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
 
-    auto_ptr<cms::Message> message(consumer->receive(5000));
+    std::unique_ptr<cms::Message> message(consumer->receive(5000));
     CPPUNIT_ASSERT(message.get() == NULL);
 
     session->commit();
@@ -462,7 +462,7 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetchAndZeroRedelivery() {
 void OpenwireSimpleTest::testWithZeroConsumerPrefetchWithInFlightExpiration() {
 
     ActiveMQConnectionFactory factory(getBrokerURL());
-    auto_ptr<cms::Connection> connection(factory.createConnection());
+    std::unique_ptr<cms::Connection> connection(factory.createConnection());
 
     ActiveMQConnection* amqConnection = dynamic_cast<ActiveMQConnection*>(connection.get());
     amqConnection->getPrefetchPolicy()->setAll(0);
@@ -470,26 +470,26 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetchWithInFlightExpiration() {
     connection->start();
 
     {
-        auto_ptr<cms::Session> session(connection->createSession(cms::Session::AUTO_ACKNOWLEDGE));
-        auto_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchWithInFlightExpiration"));
+        std::unique_ptr<cms::Session> session(connection->createSession(cms::Session::AUTO_ACKNOWLEDGE));
+        std::unique_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchWithInFlightExpiration"));
 
         amqConnection->destroyDestination(queue.get());
 
-        auto_ptr<cms::MessageProducer> producer(session->createProducer(queue.get()));
+        std::unique_ptr<cms::MessageProducer> producer(session->createProducer(queue.get()));
 
-        auto_ptr<cms::Message> expiredMessage(session->createTextMessage("Expired"));
-        auto_ptr<cms::Message> validMessage(session->createTextMessage("Valid"));
+        std::unique_ptr<cms::Message> expiredMessage(session->createTextMessage("Expired"));
+        std::unique_ptr<cms::Message> validMessage(session->createTextMessage("Valid"));
         producer->send(expiredMessage.get(), cms::Message::DEFAULT_DELIVERY_MODE, cms::Message::DEFAULT_MSG_PRIORITY, 2000);
         producer->send(validMessage.get());
         session->close();
     }
 
-    auto_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
-    auto_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchWithInFlightExpiration"));
-    auto_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
+    std::unique_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
+    std::unique_ptr<cms::Queue> queue(session->createQueue("testWithZeroConsumerPrefetchWithInFlightExpiration"));
+    std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
 
     {
-        auto_ptr<cms::Message> message(consumer->receive(5000));
+        std::unique_ptr<cms::Message> message(consumer->receive(5000));
         CPPUNIT_ASSERT(message.get() != NULL);
         TextMessage* received = dynamic_cast<TextMessage*>(message.get());
         CPPUNIT_ASSERT_EQUAL(std::string("Expired"), received->getText());
@@ -499,7 +499,7 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetchWithInFlightExpiration() {
     Thread::sleep(2500);
 
     {
-        auto_ptr<cms::Message> message(consumer->receive(5000));
+        std::unique_ptr<cms::Message> message(consumer->receive(5000));
         CPPUNIT_ASSERT(message.get() != NULL);
         TextMessage* received = dynamic_cast<TextMessage*>(message.get());
         CPPUNIT_ASSERT_EQUAL(std::string("Valid"), received->getText());
@@ -510,3 +510,4 @@ void OpenwireSimpleTest::testWithZeroConsumerPrefetchWithInFlightExpiration() {
 
     amqConnection->destroyDestination(queue.get());
 }
+

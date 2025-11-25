@@ -139,13 +139,13 @@ namespace {
 
             try {
                 for (unsigned int i = 0; i < 50; ++i) {
-                    auto_ptr<Connection> connection(factory->createConnection());
+                    std::unique_ptr<Connection> connection(factory->createConnection());
                     connection->start();
-                    auto_ptr<Session> session(connection->createSession(Session::AUTO_ACKNOWLEDGE));
+                    std::unique_ptr<Session> session(connection->createSession(Session::AUTO_ACKNOWLEDGE));
 
                     for (unsigned int j = 0; j < 100; ++j) {
-                        auto_ptr<Queue> queue(session->createTemporaryQueue());
-                        auto_ptr<MessageProducer> producer(session->createProducer(queue.get()));
+                        std::unique_ptr<Queue> queue(session->createTemporaryQueue());
+                        std::unique_ptr<MessageProducer> producer(session->createProducer(queue.get()));
                     }
 
                     TimeUnit::MILLISECONDS.sleep(20);
@@ -177,3 +177,4 @@ void OpenwireAdvisoryTest::testConcurrentTempDestCreation() {
     CPPUNIT_ASSERT(thread1.isNoErrors());
     CPPUNIT_ASSERT(thread2.isNoErrors());
 }
+

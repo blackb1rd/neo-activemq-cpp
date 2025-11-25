@@ -40,7 +40,7 @@ namespace test {
     class Producer: public decaf::lang::Runnable {
     private:
 
-        auto_ptr<CMSProvider> cmsProvider;
+        std::unique_ptr<CMSProvider> cmsProvider;
         int numMessages;
         long long timeToLive;
         bool disableTimeStamps;
@@ -99,7 +99,7 @@ namespace test {
     class Consumer: public cms::MessageListener, public decaf::lang::Runnable {
     private:
 
-        auto_ptr<CMSProvider> cmsProvider;
+        std::unique_ptr<CMSProvider> cmsProvider;
         long initialDelay;
         long waitMillis;
         int numReceived;
@@ -235,3 +235,4 @@ void ExpirationTest::testNotExpired() {
 
     CPPUNIT_ASSERT_EQUAL(2, consumer.getNumReceived());
 }
+

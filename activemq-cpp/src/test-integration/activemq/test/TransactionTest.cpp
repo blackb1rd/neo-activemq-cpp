@@ -51,7 +51,7 @@ void TransactionTest::testSendReceiveTransactedBatches() {
 
     for (int j = 0; j < batchCount - 8; j++) {
 
-        auto_ptr<TextMessage> message(session->createTextMessage("Batch Message"));
+        std::unique_ptr<TextMessage> message(session->createTextMessage("Batch Message"));
 
         for (int i = 0; i < batchSize; i++) {
             CPPUNIT_ASSERT_NO_THROW_MESSAGE("Send should not throw an exception here.", producer->send(message.get()));
@@ -81,15 +81,15 @@ void TransactionTest::testSendRollback() {
 
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<TextMessage> outbound1(session->createTextMessage("First Message"));
-    auto_ptr<TextMessage> outbound2(session->createTextMessage("Second Message"));
+    std::unique_ptr<TextMessage> outbound1(session->createTextMessage("First Message"));
+    std::unique_ptr<TextMessage> outbound2(session->createTextMessage("Second Message"));
 
     // sends a message
     producer->send(outbound1.get());
     session->commit();
 
     // sends a message that gets rollbacked
-    auto_ptr<Message> rollback(session->createTextMessage("I'm going to get rolled back."));
+    std::unique_ptr<Message> rollback(session->createTextMessage("I'm going to get rolled back."));
     producer->send(rollback.get());
     session->rollback();
 
@@ -98,10 +98,10 @@ void TransactionTest::testSendRollback() {
     session->commit();
 
     // receives the first message
-    auto_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(1500)));
+    std::unique_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(1500)));
 
     // receives the second message
-    auto_ptr<TextMessage> inbound2(dynamic_cast<TextMessage*>(consumer->receive(4000)));
+    std::unique_ptr<TextMessage> inbound2(dynamic_cast<TextMessage*>(consumer->receive(4000)));
 
     // validates that the rollbacked was not consumed
     session->commit();
@@ -120,8 +120,8 @@ void TransactionTest::testSendRollbackCommitRollback() {
 
     producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 
-    auto_ptr<TextMessage> outbound1(session->createTextMessage("First Message"));
-    auto_ptr<TextMessage> outbound2(session->createTextMessage("Second Message"));
+    std::unique_ptr<TextMessage> outbound1(session->createTextMessage("First Message"));
+    std::unique_ptr<TextMessage> outbound2(session->createTextMessage("Second Message"));
 
     // sends them and then rolls back.
     producer->send(outbound1.get());
@@ -133,7 +133,7 @@ void TransactionTest::testSendRollbackCommitRollback() {
     session->commit();
 
     // receives the first message
-    auto_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(1500)));
+    std::unique_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(1500)));
 
     CPPUNIT_ASSERT(NULL == consumer->receive( 1500 ));
     CPPUNIT_ASSERT(outbound1->getText() == inbound1->getText());
@@ -163,8 +163,8 @@ void TransactionTest::testSendSessionClose() {
     Pointer<Queue> destination(session->createQueue("testSendSessionClose"));
 
     // Create the messages used for this test
-    auto_ptr<TextMessage> outbound1(session->createTextMessage("First Message"));
-    auto_ptr<TextMessage> outbound2(session->createTextMessage("Second Message"));
+    std::unique_ptr<TextMessage> outbound1(session->createTextMessage("First Message"));
+    std::unique_ptr<TextMessage> outbound2(session->createTextMessage("Second Message"));
 
     Pointer<MessageConsumer> consumer(session->createConsumer(destination.get()));
     Pointer<MessageProducer> producer(session->createProducer(destination.get()));
@@ -175,7 +175,7 @@ void TransactionTest::testSendSessionClose() {
     session->commit();
 
     // Send a Message but roll it back by closing the session that owns the resources
-    auto_ptr<cms::Message> rollback(session->createTextMessage("I'm going to get rolled back."));
+    std::unique_ptr<cms::Message> rollback(session->createTextMessage("I'm going to get rolled back."));
     producer->send(outbound2.get());
     session->close();
 
@@ -190,10 +190,10 @@ void TransactionTest::testSendSessionClose() {
     session->commit();
 
     // receives the first message
-    auto_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(1500)));
+    std::unique_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(1500)));
 
     // receives the second message
-    auto_ptr<TextMessage> inbound2(dynamic_cast<TextMessage*>(consumer->receive(4000)));
+    std::unique_ptr<TextMessage> inbound2(dynamic_cast<TextMessage*>(consumer->receive(4000)));
 
     // validates that the rolled back was not consumed
     session->commit();
@@ -215,7 +215,7 @@ void TransactionTest::testWithTTLSet() {
 
     cms::MessageConsumer* consumer = cmsProvider->getConsumer();
 
-    auto_ptr<TextMessage> outbound1(cmsProvider->getSession()->createTextMessage("First Message"));
+    std::unique_ptr<TextMessage> outbound1(cmsProvider->getSession()->createTextMessage("First Message"));
 
     const std::size_t NUM_MESSAGES = 50;
 
@@ -230,7 +230,7 @@ void TransactionTest::testWithTTLSet() {
     for (std::size_t i = 0; i < NUM_MESSAGES; ++i) {
 
         // receives the second message
-        auto_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(600000)));
+        std::unique_ptr<TextMessage> inbound1(dynamic_cast<TextMessage*>(consumer->receive(600000)));
         CPPUNIT_ASSERT(inbound1.get() != NULL);
         CPPUNIT_ASSERT(outbound1->getText() == inbound1->getText());
     }
@@ -242,28 +242,29 @@ void TransactionTest::testWithTTLSet() {
 void TransactionTest::testSessionCommitAfterConsumerClosed() {
 
     ActiveMQConnectionFactory factory(getBrokerURL());
-    auto_ptr<cms::Connection> connection(factory.createConnection());
+    std::unique_ptr<cms::Connection> connection(factory.createConnection());
 
     {
-        auto_ptr<cms::Session> session(connection->createSession(cms::Session::AUTO_ACKNOWLEDGE));
-        auto_ptr<cms::Queue> queue(session->createQueue("testSessionCommitAfterConsumerClosed"));
-        auto_ptr<cms::MessageProducer> producer(session->createProducer(queue.get()));
+        std::unique_ptr<cms::Session> session(connection->createSession(cms::Session::AUTO_ACKNOWLEDGE));
+        std::unique_ptr<cms::Queue> queue(session->createQueue("testSessionCommitAfterConsumerClosed"));
+        std::unique_ptr<cms::MessageProducer> producer(session->createProducer(queue.get()));
 
-        auto_ptr<cms::Message> message(session->createTextMessage("Hello"));
+        std::unique_ptr<cms::Message> message(session->createTextMessage("Hello"));
         producer->send(message.get());
         producer->close();
         session->close();
     }
 
-    auto_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
-    auto_ptr<cms::Queue> queue(session->createQueue("testSessionCommitAfterConsumerClosed"));
-    auto_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
+    std::unique_ptr<cms::Session> session(connection->createSession(cms::Session::SESSION_TRANSACTED));
+    std::unique_ptr<cms::Queue> queue(session->createQueue("testSessionCommitAfterConsumerClosed"));
+    std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
 
     connection->start();
 
-    auto_ptr<cms::Message> message(consumer->receive(5000));
+    std::unique_ptr<cms::Message> message(consumer->receive(5000));
     CPPUNIT_ASSERT(message.get() != NULL);
 
     consumer->close();
     session->commit();
 }
+

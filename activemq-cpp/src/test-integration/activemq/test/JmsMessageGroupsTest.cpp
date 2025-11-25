@@ -45,16 +45,17 @@ void JmsMessageGroupsTest::testMessageSend() {
         cms::MessageProducer* producer = cmsProvider->getProducer();
         producer->setDeliveryMode( DeliveryMode::NON_PERSISTENT );
 
-        auto_ptr<cms::TextMessage> txtMessage( session->createTextMessage( "TEST MESSAGE" ) );
+        std::unique_ptr<cms::TextMessage> txtMessage( session->createTextMessage( "TEST MESSAGE" ) );
         txtMessage->setStringProperty( "JMSXGroupID", GROUPID );
 
         // Send some text messages
         producer->send( txtMessage.get() );
 
-        auto_ptr<cms::Message> message( consumer->receive( 2000 ) );
+        std::unique_ptr<cms::Message> message( consumer->receive( 2000 ) );
         CPPUNIT_ASSERT( message.get() != NULL );
         CPPUNIT_ASSERT( message->getStringProperty( "JMSXGroupID" ) == GROUPID );
     }
     AMQ_CATCH_RETHROW( ActiveMQException )
     AMQ_CATCHALL_THROW( ActiveMQException )
 }
+

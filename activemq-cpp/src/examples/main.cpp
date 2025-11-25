@@ -88,7 +88,7 @@ public:
         try {
 
             // Create a ConnectionFactory
-            auto_ptr<ConnectionFactory> connectionFactory(
+            std::unique_ptr<ConnectionFactory> connectionFactory(
                 ConnectionFactory::createCMSConnectionFactory(brokerURI));
 
             // Create a Connection
@@ -213,7 +213,7 @@ public:
         try {
 
             // Create a ConnectionFactory
-            auto_ptr<ConnectionFactory> connectionFactory(
+            std::unique_ptr<ConnectionFactory> connectionFactory(
                 ConnectionFactory::createCMSConnectionFactory(brokerURI));
 
             // Create a Connection
@@ -419,3 +419,4 @@ int main(int argc AMQCPP_UNUSED, char* argv[] AMQCPP_UNUSED) {
 }
 
 // END SNIPPET: demo
+

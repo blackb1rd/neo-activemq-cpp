@@ -308,8 +308,8 @@ void OpenwireXATransactionsTest::testSendRollback() {
 
     connection->start();
 
-    auto_ptr<TextMessage> outbound1( session->createTextMessage( "First Message" ) );
-    auto_ptr<TextMessage> outbound2( session->createTextMessage( "Second Message" ) );
+    std::unique_ptr<TextMessage> outbound1( session->createTextMessage( "First Message" ) );
+    std::unique_ptr<TextMessage> outbound2( session->createTextMessage( "Second Message" ) );
 
     // start a new XA Transaction
     std::unique_ptr<cms::Xid> ixId( this->createXid() );
@@ -328,7 +328,7 @@ void OpenwireXATransactionsTest::testSendRollback() {
     xaResource->start( ixId.get(), 0 );
 
     // sends a message that gets rollbacked
-    auto_ptr<cms::Message> rollback(
+    std::unique_ptr<cms::Message> rollback(
         session->createTextMessage( "I'm going to get rolled back." ) );
     producer->send( rollback.get() );
 
@@ -349,11 +349,11 @@ void OpenwireXATransactionsTest::testSendRollback() {
     xaResource->commit( ixId.get(), false );
 
     // receives the first message
-    auto_ptr<TextMessage> inbound1(
+    std::unique_ptr<TextMessage> inbound1(
         dynamic_cast<TextMessage*>( consumer->receive( 1500 ) ) );
 
     // receives the second message
-    auto_ptr<TextMessage> inbound2(
+    std::unique_ptr<TextMessage> inbound2(
         dynamic_cast<TextMessage*>( consumer->receive( 4000 ) ) );
 
     CPPUNIT_ASSERT( outbound1->getText() == inbound1->getText() );
@@ -384,8 +384,8 @@ void OpenwireXATransactionsTest::testSendRollbackCommitRollback() {
 
     connection->start();
 
-    auto_ptr<TextMessage> outbound1( session->createTextMessage( "First Message" ) );
-    auto_ptr<TextMessage> outbound2( session->createTextMessage( "Second Message" ) );
+    std::unique_ptr<TextMessage> outbound1( session->createTextMessage( "First Message" ) );
+    std::unique_ptr<TextMessage> outbound2( session->createTextMessage( "Second Message" ) );
 
     // start a new XA Transaction
     std::unique_ptr<cms::Xid> ixId( this->createXid() );
@@ -418,7 +418,7 @@ void OpenwireXATransactionsTest::testSendRollbackCommitRollback() {
     std::unique_ptr<MessageConsumer> consumer( session->createConsumer( destination.get() ) );
 
     // receives the first message
-    auto_ptr<TextMessage> inbound1(
+    std::unique_ptr<TextMessage> inbound1(
         dynamic_cast<TextMessage*>( consumer->receive( 1500 ) ) );
 
     CPPUNIT_ASSERT( NULL == consumer->receive( 1500 ) );
@@ -469,7 +469,7 @@ void OpenwireXATransactionsTest::testWithTTLSet() {
 
     connection->start();
 
-    auto_ptr<TextMessage> outbound1( session->createTextMessage( "First Message" ) );
+    std::unique_ptr<TextMessage> outbound1( session->createTextMessage( "First Message" ) );
 
     const std::size_t NUM_MESSAGES = 50;
 
@@ -495,7 +495,7 @@ void OpenwireXATransactionsTest::testWithTTLSet() {
 
     for( std::size_t i = 0; i < NUM_MESSAGES; ++i ) {
 
-        auto_ptr<TextMessage> inbound1(
+        std::unique_ptr<TextMessage> inbound1(
             dynamic_cast<TextMessage*>( consumer->receive( 600000 ) ) );
         CPPUNIT_ASSERT( inbound1.get() != NULL );
         CPPUNIT_ASSERT( outbound1->getText() == inbound1->getText() );
@@ -603,3 +603,4 @@ void OpenwireXATransactionsTest::testXAResource_Exception3() {
 
     xaResource->forget( ixId.get() );
 }
+
