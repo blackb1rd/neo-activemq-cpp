@@ -226,6 +226,24 @@ namespace concurrent {
         }
 
         /**
+         * Adopts an already-locked mutex and restores recursion state.
+         * This is used after a condition variable wait where the underlying mutex
+         * is already locked by std::unique_lock.
+         *
+         * WARNING: Only call this when you KNOW the mutex is already locked!
+         *
+         * @param count The recursion depth to restore (from fullyUnlock())
+         */
+        void adoptLock(int count) {
+            if (count <= 0) {
+                return;
+            }
+            // The mutex is already locked, just update the metadata
+            _owner.store(std::this_thread::get_id(), std::memory_order_relaxed);
+            _recursionCount = count;
+        }
+
+        /**
          * Checks if the current thread owns this lock.
          *
          * @return true if the calling thread owns this lock, false otherwise

@@ -17,25 +17,31 @@
 
 #include <decaf/util/concurrent/Mutex.h>
 
-#include <decaf/internal/util/concurrent/Threading.h>
+#include <decaf/internal/util/concurrent/CustomReentrantLock.h>
 #include <decaf/lang/Integer.h>
+#include <decaf/lang/Thread.h>
 
-#include <list>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
 using namespace decaf;
-using namespace decaf::internal;
-using namespace decaf::internal::util;
-using namespace decaf::internal::util::concurrent;
 using namespace decaf::util;
 using namespace decaf::util::concurrent;
 using namespace decaf::lang;
 using namespace decaf::lang::exceptions;
+using decaf::internal::util::concurrent::CustomReentrantLock;
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace decaf {
 namespace util {
 namespace concurrent {
 
+    /**
+     * Internal implementation using CustomReentrantLock.
+     * Supports recursive locking - the same thread can lock multiple times
+     * without deadlocking. Uses std::condition_variable for wait/notify.
+     */
     class MutexProperties {
     private:
 
@@ -44,14 +50,14 @@ namespace concurrent {
 
     public:
 
-        MutexProperties() : monitor(NULL), name() {
+        MutexProperties() {
             std::string idStr = Integer::toString(++id);
             this->name.reserve(DEFAULT_NAME_PREFIX.length() + idStr.length());
             this->name.append(DEFAULT_NAME_PREFIX);
             this->name.append(idStr);
         }
 
-        MutexProperties(const std::string& name) : monitor(NULL), name(name) {
+        MutexProperties(const std::string& name) : name(name) {
             if (this->name.empty()) {
                 std::string idStr = Integer::toString(++id);
                 this->name.reserve(DEFAULT_NAME_PREFIX.length() + idStr.length());
@@ -60,12 +66,12 @@ namespace concurrent {
             }
         }
 
-        MonitorHandle* monitor;
+        CustomReentrantLock reentrantLock; // Recursive lock implementation
+        std::condition_variable condition; // Standard condition variable
         std::string name;
 
         static unsigned int id;
         static std::string DEFAULT_NAME_PREFIX;
-
     };
 
     unsigned int MutexProperties::id = 0;
@@ -85,14 +91,11 @@ Mutex::Mutex( const std::string& name ) : Synchronizable(), properties(NULL) {
 
 ////////////////////////////////////////////////////////////////////////////////
 Mutex::~Mutex() {
-
     try {
-        if (this->properties->monitor != NULL) {
-            Threading::returnMonitor(this->properties->monitor);
-        }
+        // Ensure mutex is not locked during destruction
+        // std::mutex destructor handles cleanup automatically
     } catch (...) {
         // Suppress all exceptions in destructor to prevent std::terminate()
-        // This can happen if the monitor is still in use during abnormal shutdown
     }
 
     delete this->properties;
@@ -110,58 +113,23 @@ std::string Mutex::toString() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 bool Mutex::isLocked() const {
-    if (this->properties->monitor != NULL) {
-        Threading::isMonitorLocked(this->properties->monitor);
-    }
-
-    return false;
+    return this->properties->reentrantLock.isHeldByCurrentThread();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void Mutex::lock() {
-
-    if(this->properties->monitor == NULL) {
-
-        Threading::lockThreadsLib();
-
-        if (this->properties->monitor == NULL) {
-            this->properties->monitor = Threading::takeMonitor(true);
-        }
-
-        Threading::unlockThreadsLib();
-    }
-
-    Threading::enterMonitor(this->properties->monitor);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-bool Mutex::tryLock() {
-
-    if(this->properties->monitor == NULL) {
-
-        Threading::lockThreadsLib();
-
-        if (this->properties->monitor == NULL) {
-            this->properties->monitor = Threading::takeMonitor(true);
-        }
-
-        Threading::unlockThreadsLib();
-    }
-
-    return Threading::tryEnterMonitor(this->properties->monitor);
+    this->properties->reentrantLock.lock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void Mutex::unlock() {
-
-    if (this->properties->monitor == NULL) {
-        throw IllegalMonitorStateException(__FILE__, __LINE__,
-            "Call to unlock without prior call to lock or tryLock");
-    }
-
-    Threading::exitMonitor(this->properties->monitor);
+    this->properties->reentrantLock.unlock();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+bool Mutex::tryLock() {
+    return this->properties->reentrantLock.tryLock();
+}
 ////////////////////////////////////////////////////////////////////////////////
 void Mutex::wait() {
     wait(0, 0);
@@ -183,32 +151,33 @@ void Mutex::wait( long long millisecs, int nanos ) {
         throw IllegalArgumentException(__FILE__, __LINE__, "Nanoseconds value must be in the range [0..999999].");
     }
 
-    if (this->properties->monitor == NULL) {
-        throw IllegalMonitorStateException(__FILE__, __LINE__,
-            "Call to wait without prior call to lock or tryLock");
+    // Save and fully release the lock (handles recursion properly)
+    int savedRecursionCount = this->properties->reentrantLock.fullyUnlock();
+
+    // Create a unique_lock for the internal mutex (it will lock it)
+    std::unique_lock<std::mutex> lock(this->properties->reentrantLock.getInternalMutex());
+
+    // Wait on the condition variable (releases lock and reacquires on wake)
+    if (millisecs == 0 && nanos == 0) {
+        this->properties->condition.wait(lock);
+    } else {
+        auto duration = std::chrono::milliseconds(millisecs) + std::chrono::nanoseconds(nanos);
+        this->properties->condition.wait_for(lock, duration);
     }
 
-    Threading::waitOnMonitor(this->properties->monitor, millisecs, nanos);
+    // Release the unique_lock without unlocking (we'll restore recursion state)
+    lock.release();
+
+    // Restore the lock to its previous recursion state (mutex is already locked)
+    this->properties->reentrantLock.adoptLock(savedRecursionCount);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void Mutex::notify() {
-
-    if (this->properties->monitor == NULL) {
-        throw IllegalMonitorStateException(__FILE__, __LINE__,
-            "Call to notify without prior call to lock or tryLock");
-    }
-
-    Threading::notifyWaiter(this->properties->monitor);
+    this->properties->condition.notify_one();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void Mutex::notifyAll() {
-
-    if (this->properties->monitor == NULL) {
-        throw IllegalMonitorStateException(__FILE__, __LINE__,
-            "Call to notifyAll without prior call to lock or tryLock");
-    }
-
-    Threading::notifyAllWaiters(this->properties->monitor);
+    this->properties->condition.notify_all();
 }
