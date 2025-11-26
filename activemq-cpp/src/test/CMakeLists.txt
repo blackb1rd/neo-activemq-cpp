@@ -263,19 +263,19 @@ set(TEST_SRCS
 set(TEST_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 # Build a single test harness driven by the top-level main.cpp. Remove
-# main.cpp from the sources list, then create a single `test` executable
+# main.cpp from the sources list, then create a single `activemq-test` executable
 # that contains all tests and the runner.
 list(REMOVE_ITEM TEST_SRCS ${TEST_MAIN})
-add_executable(test ${TEST_MAIN} ${TEST_SRCS})
-target_include_directories(test PRIVATE
+add_executable(activemq-test ${TEST_MAIN} ${TEST_SRCS})
+target_include_directories(activemq-test PRIVATE
   ${CMAKE_SOURCE_DIR}/src/main
   ${CMAKE_SOURCE_DIR}/src/test
 )
-target_link_libraries(test PRIVATE activemq_cms activemq_core decaf)
+target_link_libraries(activemq-test PRIVATE activemq_cms activemq_core decaf)
 if(TARGET CppUnit::CppUnit)
-  target_link_libraries(test PRIVATE CppUnit::CppUnit)
+  target_link_libraries(activemq-test PRIVATE CppUnit::CppUnit)
 elseif(TARGET CppUnit)
-  target_link_libraries(test PRIVATE CppUnit)
+  target_link_libraries(activemq-test PRIVATE CppUnit)
 else()
-  target_link_libraries(test PRIVATE CppUnit)
+  target_link_libraries(activemq-test PRIVATE CppUnit)
 endif()

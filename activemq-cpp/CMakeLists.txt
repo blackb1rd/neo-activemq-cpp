@@ -47,11 +47,12 @@ add_subdirectory(src/examples)
 
 if(WITH_TESTS)
     find_package(CppUnit CONFIG REQUIRED)
+	# Enable CTest before adding test subdirectory
+	enable_testing()
 	add_subdirectory(src/test)
 
-	# Enable CTest and register the test executable
-	enable_testing()
-	add_test(NAME activemq-unit-tests COMMAND test)
+	# Register the test executable
+	add_test(NAME activemq-unit-tests COMMAND activemq-test)
 
 	# Set a timeout for the test (default: 300 seconds = 5 minutes)
 	set_tests_properties(activemq-unit-tests PROPERTIES TIMEOUT 300)

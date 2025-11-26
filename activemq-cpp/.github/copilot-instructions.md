@@ -65,12 +65,13 @@ ctest --preset x64-linux-debug --output-on-failure
 
 **Run a specific test:**
 ```bash
-ctest --preset x64-linux-debug -R activemq-unit-tests
+ctest --preset x64-linux-debug -V:w
+ -R activemq-unit-tests
 ```
 
 **Run the test executable directly:**
 ```bash
-./output/build/x64-linux-debug/src/test/test
+ctest --preset x64-linux-debug -V
 ```
 
 ## Architecture Notes
