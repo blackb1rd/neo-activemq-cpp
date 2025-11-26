@@ -136,6 +136,9 @@ namespace transport {
 
         virtual void setTransportListener(TransportListener* listener) {
             this->listener = listener;
+            if (next != NULL) {
+                next->setTransportListener(this);
+            }
         }
 
         virtual TransportListener* getTransportListener() const {

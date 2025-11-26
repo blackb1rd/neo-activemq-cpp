@@ -77,7 +77,7 @@ namespace tcp {
         bool tcpNoDelay;
 
         TcpTransportImpl(const decaf::net::URI& location) :
-            connectTimeout(0),
+            connectTimeout(3000),
             socket(),
             dataInputStream(),
             dataOutputStream(),
@@ -176,9 +176,7 @@ void TcpTransport::connect() {
         string host = uri.getHost();
         int port = uri.getPort();
 
-        impl->socket->connect(host, port, impl->connectTimeout);
-
-        // Cast it to an IO transport so we can wire up the socket
+        impl->socket->connect(host, port, impl->connectTimeout);        // Cast it to an IO transport so we can wire up the socket
         // input and output streams.
         IOTransport* ioTransport = dynamic_cast<IOTransport*>(next.get());
         if (ioTransport == NULL) {

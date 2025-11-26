@@ -873,6 +873,7 @@ void FailoverTransportTest::testConnectedToPriorityOnFirstTryThenFailover() {
 
     Pointer<Transport> transport(factory.create(uri));
     CPPUNIT_ASSERT(transport != NULL);
+
     transport->setTransportListener(&listener);
 
     FailoverTransport* failover =
@@ -926,6 +927,7 @@ void FailoverTransportTest::testConnectsToPriorityOnceStarted() {
 
     Pointer<Transport> transport(factory.create(uri));
     CPPUNIT_ASSERT(transport != NULL);
+
     transport->setTransportListener(&listener);
 
     FailoverTransport* failover =
@@ -947,6 +949,7 @@ void FailoverTransportTest::testConnectsToPriorityOnceStarted() {
     broker1->waitUntilStarted();
 
     CPPUNIT_ASSERT_MESSAGE("Failed to get interrupted in time", listener.awaitInterruption());
+
     CPPUNIT_ASSERT_MESSAGE("Failed to get reconnected in time", listener.awaitResumed());
     listener.reset();
 

@@ -157,22 +157,26 @@ namespace mock {
 
                     Pointer<WireFormatInfo> preferred = wireFormat->getPreferedWireFormatInfo();
 
-                    OutputStream* os = clientSocket->getOutputStream();
-                    DataOutputStream dataOut(os);
+                    {
+                        OutputStream* os = clientSocket->getOutputStream();
+                        DataOutputStream dataOut(os);
 
-                    InputStream* is = clientSocket->getInputStream();
-                    DataInputStream dataIn(is);
+                        InputStream* is = clientSocket->getInputStream();
+                        DataInputStream dataIn(is);
 
-                    wireFormat->marshal(preferred, &mock, &dataOut);
-                    dataOut.flush();
+                        wireFormat->marshal(preferred, &mock, &dataOut);
+                        dataOut.flush();
 
-                    while (!done) {
-                        Pointer<Command> command = wireFormat->unmarshal(&mock, &dataIn);
-                        Pointer<Response> response = responeBuilder->buildResponse(command);
+                        while (!done) {
+                            Pointer<Command> command = wireFormat->unmarshal(&mock, &dataIn);
+                            Pointer<Response> response = responeBuilder->buildResponse(command);
 
-                        if (response != NULL) {
-                            wireFormat->marshal(response, &mock, &dataOut);
+                            if (response != NULL) {
+                                wireFormat->marshal(response, &mock, &dataOut);
+                            }
                         }
+                        // DataInputStream and DataOutputStream will be destroyed here,
+                        // before the socket is closed
                     }
 
                     // Clean up the client socket

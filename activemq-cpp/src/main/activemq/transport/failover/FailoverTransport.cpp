@@ -398,11 +398,11 @@ void FailoverTransport::setTransportListener(TransportListener* listener) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TransportListener* FailoverTransport::getTransportListener() const {
+    TransportListener* listener = NULL;
     synchronized( &this->impl->listenerMutex ) {
-        return this->impl->transportListener;
+        listener = this->impl->transportListener;
     }
-
-    return NULL;
+    return listener;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -980,9 +980,7 @@ bool FailoverTransport::iterate() {
                         }
 
                         transport->setTransportListener(this->impl->myTransportListener.get());
-                        transport->start();
-
-                        // Clear the connectingTransport marker now that start() returned.
+                        transport->start();                        // Clear the connectingTransport marker now that start() returned.
                         this->impl->connectingTransport.reset(NULL);
 
                         if (this->impl->started && !this->impl->firstConnection) {
@@ -1014,11 +1012,11 @@ bool FailoverTransport::iterate() {
                             }
                         }
 
-                        if (this->impl->transportListener != NULL) {
-                            this->impl->transportListener->transportResumed();
-                        }
-
-                        if (this->impl->firstConnection) {
+                        synchronized(&this->impl->listenerMutex) {
+                            if (this->impl->transportListener != NULL) {
+                                this->impl->transportListener->transportResumed();
+                            }
+                        }                        if (this->impl->firstConnection) {
                             this->impl->firstConnection = false;
                         }
 
