@@ -984,12 +984,12 @@ bool FailoverTransport::iterate() {
                         }
 
                         transport->setTransportListener(this->impl->myTransportListener.get());
-                        
+
                         // Only start the transport if it's not already started (i.e., not from backup pool)
                         if (!transportAlreadyStarted) {
                             transport->start();
                         }
-                        
+
                         // Clear the connectingTransport marker now that start() returned.
                         this->impl->connectingTransport.reset(NULL);
                         transportAlreadyStarted = false;  // Reset for next iteration
