@@ -17,6 +17,7 @@
 
 #include "FailoverTransport.h"
 
+#include <atomic>
 #include <activemq/commands/ConnectionControl.h>
 #include <activemq/commands/ShutdownInfo.h>
 #include <activemq/commands/RemoveInfo.h>
@@ -69,9 +70,9 @@ namespace failover {
 
     public:
 
-        volatile bool closed;
-        volatile bool connected;
-        volatile bool started;
+        std::atomic<bool> closed;
+        std::atomic<bool> connected;
+        std::atomic<bool> started;
 
         long long timeout;
         long long initialReconnectDelay;
@@ -666,11 +667,12 @@ void FailoverTransport::close() {
             this->impl->sleepMutex.notifyAll();
         }
 
-        this->impl->taskRunner->shutdown(TimeUnit::MINUTES.toMillis(5));
-
+        // Close the transport BEFORE calling shutdown to interrupt any blocking operations
         if (transportToStop != NULL) {
             transportToStop->close();
         }
+
+        this->impl->taskRunner->shutdown(TimeUnit::MINUTES.toMillis(5));
     }
     AMQ_CATCH_RETHROW(IOException)
     AMQ_CATCH_EXCEPTION_CONVERT(Exception, IOException)
@@ -983,8 +985,20 @@ bool FailoverTransport::iterate() {
                         transport->start();                        // Clear the connectingTransport marker now that start() returned.
                         this->impl->connectingTransport.reset(NULL);
 
+                        // Check if we were closed during the blocking start() operation
+                        if (this->impl->closed) {
+                            transport->close();
+                            return false;
+                        }
+
                         if (this->impl->started && !this->impl->firstConnection) {
                             restoreTransport(transport);
+                        }
+
+                        // Check if we were closed during the blocking restoreTransport() operation
+                        if (this->impl->closed) {
+                            transport->close();
+                            return false;
                         }
 
                         this->impl->reconnectDelay = this->impl->initialReconnectDelay;
@@ -1087,7 +1101,8 @@ bool FailoverTransport::iterate() {
         this->impl->doDelay();
     }
 
-    return !this->impl->closed;
+    bool result = !this->impl->closed;
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

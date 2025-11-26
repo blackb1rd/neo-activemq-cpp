@@ -26,6 +26,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <chrono>
+#include <thread>
 
 using namespace decaf;
 using namespace decaf::util;
@@ -94,8 +95,22 @@ Mutex::Mutex( const std::string& name ) : Synchronizable(), properties(NULL) {
 ////////////////////////////////////////////////////////////////////////////////
 Mutex::~Mutex() {
     try {
-        // Ensure mutex is not locked during destruction
-        // std::mutex destructor handles cleanup automatically
+        // CRITICAL: Destroying a locked std::mutex is undefined behavior and causes crashes.
+        // Ensure proper cleanup before destruction.
+
+        // If the current thread owns the lock, unlock it completely
+        while (this->properties->reentrantLock.isHeldByCurrentThread()) {
+            this->properties->reentrantLock.unlock();
+        }
+
+        // If another thread holds the lock, we have a race condition during shutdown.
+        // On Windows, thread stack unwinding can continue briefly after join() returns.
+        // Wait a short time to allow Lock RAII destructors to complete their unlock() calls.
+        if (this->properties->reentrantLock.isLocked()) {
+            for (int i = 0; i < 50 && this->properties->reentrantLock.isLocked(); ++i) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+        }
     } catch (...) {
         // Suppress all exceptions in destructor to prevent std::terminate()
     }

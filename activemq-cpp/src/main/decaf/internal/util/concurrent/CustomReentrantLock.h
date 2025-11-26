@@ -265,6 +265,15 @@ namespace concurrent {
         }
 
         /**
+         * Checks if this lock is held by any thread.
+         *
+         * @return true if any thread owns this lock, false if unlocked
+         */
+        bool isLocked() const {
+            return _owner.load(std::memory_order_relaxed) != std::thread::id();
+        }
+
+        /**
          * Returns the number of times the current thread has acquired this lock.
          *
          * @return The recursion depth, or 0 if the current thread doesn't own the lock
