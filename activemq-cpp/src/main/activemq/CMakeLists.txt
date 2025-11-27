@@ -13,40 +13,40 @@ list(FILTER ACTIVEMQ_SOURCES EXCLUDE REGEX ".*/test/.*|.*/tests?/.*")
 # exception symbols are available without creating a circular link
 # dependency between activemq_core and activemq_cms.
 list(APPEND ACTIVEMQ_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/CMSSecurityException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageEOFException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/CMSSecurityException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageEOFException.cpp
 )
 
 # Also include other CMS exception implementations that BrokerError and
 # other activemq_core sources construct, so their symbols are available
 # when linking activemq_core.
 list(APPEND ACTIVEMQ_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/CMSException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageFormatException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageNotReadableException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageNotWriteableException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/InvalidClientIdException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/InvalidDestinationException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/InvalidSelectorException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/IllegalStateException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ResourceAllocationException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TransactionInProgressException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TransactionRolledBackException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/UnsupportedOperationException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/CMSException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageFormatException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageNotReadableException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageNotWriteableException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/InvalidClientIdException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/InvalidDestinationException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/InvalidSelectorException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/IllegalStateException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/ResourceAllocationException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/TransactionInProgressException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/TransactionRolledBackException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/UnsupportedOperationException.cpp
 )
 
 # Also compile in additional CMS implementations that activemq_core
 # needs directly so those symbols are available at link-time.
 list(APPEND ACTIVEMQ_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/XAException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageConsumer.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageProducer.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Destination.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/DestinationEvent.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageEnumeration.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/QueueBrowser.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/XAResource.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Xid.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/XAException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageConsumer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageProducer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Destination.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/DestinationEvent.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageEnumeration.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/QueueBrowser.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/XAResource.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Xid.cpp
 )
 
 # Also compile additional CMS implementation files into activemq_core so
@@ -54,26 +54,26 @@ list(APPEND ACTIVEMQ_SOURCES
 # (destructors, vtables, typeinfo). This prevents unresolved-symbol and
 # static-archive ordering problems when building/linking on Linux.
 list(APPEND ACTIVEMQ_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Connection.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ConnectionFactory.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ConnectionMetaData.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/EnhancedConnection.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Startable.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Stoppable.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Closeable.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Session.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/CMSProperties.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/BytesMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MapMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ObjectMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/StreamMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Queue.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TemporaryQueue.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TemporaryTopic.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Topic.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Message.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageTransformer.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/DestinationSource.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Connection.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/ConnectionFactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/ConnectionMetaData.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/EnhancedConnection.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Startable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Stoppable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Closeable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Session.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/CMSProperties.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/BytesMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MapMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/ObjectMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/StreamMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Queue.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/TemporaryQueue.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/TemporaryTopic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Topic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/Message.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/MessageTransformer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../cms/DestinationSource.cpp
 )
 
 if(AMQCPP_SHARED_LIB)
@@ -85,7 +85,7 @@ endif()
 target_include_directories(activemq_core
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/src/main
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 target_link_libraries(activemq_core PUBLIC decaf)

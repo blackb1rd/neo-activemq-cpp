@@ -27,6 +27,8 @@ activemq-cpp/aclocal.m4
 activemq-cpp/config.h.in
 configure
 
+output/
+.cache/
 
 
 

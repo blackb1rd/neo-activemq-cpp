@@ -14,26 +14,26 @@ list(FILTER CMS_SOURCES EXCLUDE REGEX ".*/test/.*|.*/tests?/.*")
 # circular dependency when linking shared libraries. Remove them from the
 # CMS sources list so they are not compiled into activemq_cms.
 list(REMOVE_ITEM CMS_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/CMSSecurityException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageEOFException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CMSSecurityException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageEOFException.cpp
 )
 
 # Also remove other CMS exception implementation files that are needed
 # by activemq_core so their symbols are available where BrokerError is
 # constructed.
 list(REMOVE_ITEM CMS_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/CMSException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageFormatException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageNotReadableException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageNotWriteableException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/InvalidClientIdException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/InvalidDestinationException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/InvalidSelectorException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/IllegalStateException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ResourceAllocationException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TransactionInProgressException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TransactionRolledBackException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/UnsupportedOperationException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CMSException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageFormatException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageNotReadableException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageNotWriteableException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/InvalidClientIdException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/InvalidDestinationException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/InvalidSelectorException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/IllegalStateException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ResourceAllocationException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/TransactionInProgressException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/TransactionRolledBackException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/UnsupportedOperationException.cpp
 )
 
 # Also remove additional CMS implementations that are referenced by
@@ -41,42 +41,42 @@ list(REMOVE_ITEM CMS_SOURCES
 # activemq_cms which would create a circular dependency when using
 # shared libraries).
 list(REMOVE_ITEM CMS_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/XAException.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageConsumer.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageProducer.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Destination.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/DestinationEvent.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageEnumeration.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/QueueBrowser.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/XAResource.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Xid.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/XAException.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageConsumer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageProducer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Destination.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/DestinationEvent.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageEnumeration.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/QueueBrowser.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/XAResource.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Xid.cpp
 )
 
 # Remove additional CMS implementation files that should be compiled
 # into activemq_core so the core gets the concrete definitions (vtables,
 # destructors, typeinfo) and avoids static archive ordering problems.
 list(REMOVE_ITEM CMS_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Connection.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ConnectionFactory.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ConnectionMetaData.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/EnhancedConnection.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Startable.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Stoppable.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Closeable.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Session.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/CMSProperties.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/BytesMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MapMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ObjectMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/StreamMessage.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Queue.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TemporaryQueue.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/TemporaryTopic.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Topic.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/Message.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/MessageTransformer.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/ConnectionFactory.cpp
-  ${CMAKE_SOURCE_DIR}/src/main/cms/DestinationSource.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Connection.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ConnectionFactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ConnectionMetaData.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/EnhancedConnection.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Startable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Stoppable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Closeable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Session.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CMSProperties.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/BytesMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MapMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ObjectMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/StreamMessage.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Queue.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/TemporaryQueue.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/TemporaryTopic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Topic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Message.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MessageTransformer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ConnectionFactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/DestinationSource.cpp
 )
 
 if(AMQCPP_SHARED_LIB)
@@ -88,7 +88,7 @@ endif()
 target_include_directories(activemq_cms
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/src/main
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 target_link_libraries(activemq_cms PUBLIC activemq_core decaf)

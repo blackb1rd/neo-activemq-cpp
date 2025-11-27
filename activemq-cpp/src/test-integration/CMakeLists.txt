@@ -98,8 +98,8 @@ set(INTEGRATION_TEST_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 list(REMOVE_ITEM INTEGRATION_TEST_SRCS ${INTEGRATION_TEST_MAIN})
 add_executable(activemq-integration-test ${INTEGRATION_TEST_MAIN} ${INTEGRATION_TEST_SRCS})
 target_include_directories(activemq-integration-test PRIVATE
-  ${CMAKE_SOURCE_DIR}/src/main
-  ${CMAKE_SOURCE_DIR}/src/test-integration
+  ${CMAKE_CURRENT_SOURCE_DIR}/../main
+  ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # Link libraries with proper dependency order for static linking

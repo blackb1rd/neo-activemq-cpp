@@ -38,8 +38,8 @@ set(BENCHMARK_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 list(REMOVE_ITEM BENCHMARK_SRCS ${BENCHMARK_MAIN})
 add_executable(activemq-benchmark ${BENCHMARK_MAIN} ${BENCHMARK_SRCS})
 target_include_directories(activemq-benchmark PRIVATE
-  ${CMAKE_SOURCE_DIR}/src/main
-  ${CMAKE_SOURCE_DIR}/src/test-benchmarks
+  ${CMAKE_CURRENT_SOURCE_DIR}/../main
+  ${CMAKE_CURRENT_SOURCE_DIR}
 )
 # Link libraries with proper dependency order for static linking
 # Use LINK_GROUP with RESCAN to ensure circular dependencies between static libraries are resolved

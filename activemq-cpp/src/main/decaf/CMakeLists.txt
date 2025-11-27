@@ -35,7 +35,7 @@ endif()
 target_include_directories(decaf
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/src/main
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 if(AMQCPP_USE_SSL)

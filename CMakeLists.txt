@@ -40,16 +40,16 @@ endif()
 # Build component libraries in `src/main` and tests/examples under `src`
 
 # Add component subdirectories if present (paths are relative to project root)
-add_subdirectory(src/main/decaf)
-add_subdirectory(src/main/activemq)
-add_subdirectory(src/main/cms)
-add_subdirectory(src/examples)
+add_subdirectory(activemq-cpp/src/main/decaf)
+add_subdirectory(activemq-cpp/src/main/activemq)
+add_subdirectory(activemq-cpp/src/main/cms)
+add_subdirectory(activemq-cpp/src/examples)
 
 if(WITH_TESTS)
     find_package(CppUnit CONFIG REQUIRED)
-	add_subdirectory(src/test)
-	add_subdirectory(src/test-benchmarks)
-	add_subdirectory(src/test-integration)
+	add_subdirectory(activemq-cpp/src/test)
+	add_subdirectory(activemq-cpp/src/test-benchmarks)
+	add_subdirectory(activemq-cpp/src/test-integration)
 
 	# Enable CTest and register the test executables
 	enable_testing()

@@ -64,7 +64,7 @@ foreach(_src IN LISTS EXAMPLE_SRCS)
     endforeach()
 
     add_executable(${_target} ${_exe_sources})
-    target_include_directories(${_target} PRIVATE ${CMAKE_SOURCE_DIR}/src/main)
+    target_include_directories(${_target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../main)
     target_link_libraries(${_target} PRIVATE activemq_cms activemq_core decaf)
   endif()
 endforeach()

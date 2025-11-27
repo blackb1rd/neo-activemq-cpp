@@ -268,8 +268,8 @@ set(TEST_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 list(REMOVE_ITEM TEST_SRCS ${TEST_MAIN})
 add_executable(activemq-test ${TEST_MAIN} ${TEST_SRCS})
 target_include_directories(activemq-test PRIVATE
-  ${CMAKE_SOURCE_DIR}/src/main
-  ${CMAKE_SOURCE_DIR}/src/test
+  ${CMAKE_CURRENT_SOURCE_DIR}/../main
+  ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_link_libraries(activemq-test PRIVATE activemq_cms activemq_core decaf)
 if(TARGET CppUnit::CppUnit)
