@@ -4,6 +4,11 @@ project(activemq-cpp LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Output directories for binaries and libraries
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 find_package(apr CONFIG REQUIRED)
 
 # Options
@@ -32,7 +37,6 @@ else()
 	find_package(OpenSSL QUIET)
 	message(STATUS "AMQCPP: SSL support disabled; OpenSSL will be optional.")
 endif()
-
 
 ## Inline `src/CMakeLists.txt` content so project can be configured from
 ## the top-level CMake without a separate `src` directory CMakeLists.
@@ -163,4 +167,23 @@ if(WITH_TESTS)
 	message(STATUS "  cmake --build --preset <preset> --target docker-logs       # View logs")
 	message(STATUS "  cmake --build --preset <preset> --target integration-full  # Full workflow")
 endif()
+
+# Installation rules
+include(GNUInstallDirs)
+
+# Install libraries
+install(TARGETS decaf activemq_core activemq_cms
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+# Install header files
+install(DIRECTORY 
+	${CMAKE_SOURCE_DIR}/activemq-cpp/src/main/activemq
+	${CMAKE_SOURCE_DIR}/activemq-cpp/src/main/cms
+	${CMAKE_SOURCE_DIR}/activemq-cpp/src/main/decaf
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
 
