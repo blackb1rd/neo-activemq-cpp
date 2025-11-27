@@ -4,6 +4,18 @@ project(activemq-cpp LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Platform-specific debug flags
+if(MSVC)
+    # Windows/MSVC: Use /Zi for debug info, /Od for no optimization
+    set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od")
+else()
+    # GCC/Clang (Linux, macOS, MinGW): Use -g3 for detailed debug info, -O0 for no optimization
+    set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0")
+
+    # -rdynamic is Linux-specific (exports symbols for backtraces)
+	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-rdynamic")
+endif()
+
 # Output directories for binaries and libraries
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

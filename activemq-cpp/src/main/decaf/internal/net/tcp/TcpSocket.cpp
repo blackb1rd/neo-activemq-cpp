@@ -195,8 +195,10 @@ void TcpSocket::accept(SocketImpl* socket) {
         } while (result == APR_EINTR);
 
         if (result != APR_SUCCESS) {
+            // Capture error string immediately to avoid race conditions during exception construction
+            std::string errorString = SocketError::getErrorString();
             throw SocketException(__FILE__, __LINE__,
-                "ServerSocket::accept - %s", SocketError::getErrorString().c_str());
+                "ServerSocket::accept - %s", errorString.c_str());
         }
 
         // the socketHandle will have been allocated in the apr_pool of the ServerSocket.
@@ -268,7 +270,8 @@ void TcpSocket::bind(const std::string& ipaddress, int port) {
 
         if (result != APR_SUCCESS) {
             impl->socketHandle = NULL;
-            throw SocketException(__FILE__, __LINE__, SocketError::getErrorString().c_str());
+            std::string errorString = SocketError::getErrorString();
+            throw SocketException(__FILE__, __LINE__, errorString.c_str());
         }
 
         // Set the socket to reuse the address and default as blocking with no timeout.

@@ -647,7 +647,7 @@ void FailoverTransport::close() {
 
             this->impl->started = false;
             this->impl->closed = true;
-            this->impl->connected = false;
+            this->impl->connected.store(false, std::memory_order_release);
 
             this->impl->backups->setEnabled(false);
             this->impl->requestMap.clear();
@@ -767,7 +767,7 @@ void FailoverTransport::handleTransportFailure(const decaf::lang::Exception& err
             this->impl->initialized = false;
             this->impl->uris->addURI(failedUri);
             this->impl->connectedTransportURI.reset(NULL);
-            this->impl->connected = false;
+            this->impl->connected.store(false, std::memory_order_release);
             this->impl->connectedToPrioirty = false;
 
             // Place the State Tracker into a reconnection state.
@@ -1037,7 +1037,6 @@ bool FailoverTransport::iterate() {
                         this->impl->connectedTransport = transport;
                         this->impl->reconnectMutex.notifyAll();
                         this->impl->connectFailures = 0;
-                        this->impl->connected = true;
 
                         if (isPriorityBackup()) {
                             this->impl->connectedToPrioirty = connectList->getPriorityURI().equals(uri) ||
@@ -1057,18 +1056,24 @@ bool FailoverTransport::iterate() {
                             }
                         }
 
-                        synchronized(&this->impl->listenerMutex) {
-                            if (this->impl->transportListener != NULL) {
-                                this->impl->transportListener->transportResumed();
-                            }
-                        }                        if (this->impl->firstConnection) {
+                        if (this->impl->firstConnection) {
                             this->impl->firstConnection = false;
                         }
 
                         // Return the failures to the pool, we will try again on the next iteration.
                         connectList->addURIs(failures);
 
-                        this->impl->connected = true;
+                        // Set connected BEFORE notifying listener to prevent race condition
+                        this->impl->connected.store(true, std::memory_order_release);
+                        // Memory barrier to ensure connected state is visible
+                        std::atomic_thread_fence(std::memory_order_seq_cst);
+
+                        synchronized(&this->impl->listenerMutex) {
+                            if (this->impl->transportListener != NULL) {
+                                this->impl->transportListener->transportResumed();
+                            }
+                        }
+
                         return false;
 
                     } catch (Exception& e) {
@@ -1088,7 +1093,7 @@ bool FailoverTransport::iterate() {
                             // this prevents a deadlock from occurring if the Transport happens
                             // to call back through our onException method or locks in some other
                             // way.
-                            this->impl->connected = false;
+                            this->impl->connected.store(false, std::memory_order_release);
                             this->impl->closeTask->add(transport);
                             this->impl->taskRunner->wakeup();
                             transport.reset(NULL);
@@ -1112,6 +1117,15 @@ bool FailoverTransport::iterate() {
         if (reconnectAttempts >= 0 && ++this->impl->connectFailures >= reconnectAttempts) {
             this->impl->connectionFailure = failure;
 
+            // If this was a first connection failure and we've exhausted startupMaxReconnectAttempts,
+            // transition to using maxReconnectAttempts for future attempts
+            bool wasFirstConnection = this->impl->firstConnection;
+            if (this->impl->firstConnection) {
+                this->impl->firstConnection = false;
+                this->impl->connectFailures = 0;  // Reset counter for subsequent reconnection attempts with maxReconnectAttempts
+                this->impl->resetReconnectDelay();  // Reset delay back to initial value
+            }
+
             // Make sure on initial startup, that the transportListener has been initialized
             // for this instance.
             // Wait in smaller increments so we can check for shutdown
@@ -1124,7 +1138,19 @@ bool FailoverTransport::iterate() {
             }
 
             this->impl->propagateFailureToExceptionListener();
-            return false;
+
+            // Clear failure after propagating to allow continued reconnection
+            if (wasFirstConnection) {
+                this->impl->connectionFailure.reset(NULL);
+            }
+
+            // If this was the first connection exhaustion, continue trying with maxReconnectAttempts
+            // Otherwise, we've truly exhausted all reconnection attempts
+            if (!wasFirstConnection) {
+                return false;
+            }
+            // For first connection transition, immediately retry without delay
+            return true;
         }
     }
 
@@ -1166,7 +1192,9 @@ void FailoverTransport::setConnectionInterruptProcessingComplete(const Pointer<c
 
 ////////////////////////////////////////////////////////////////////////////////
 bool FailoverTransport::isConnected() const {
-    return this->impl->connected;
+    // Memory barrier to ensure we see the latest connected state
+    std::atomic_thread_fence(std::memory_order_acquire);
+    return this->impl->connected.load(std::memory_order_acquire);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

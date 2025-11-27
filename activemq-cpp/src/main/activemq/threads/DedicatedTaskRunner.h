@@ -26,9 +26,16 @@
 #include <decaf/lang/Runnable.h>
 #include <decaf/util/concurrent/Mutex.h>
 #include <decaf/lang/Pointer.h>
+#include <atomic>
 
 namespace activemq {
 namespace threads {
+
+    enum class DedicatedTaskRunnerState : int {
+        RUNNING = 0,
+        STOPPING = 1,
+        STOPPED = 2
+    };
 
     class AMQCPP_API DedicatedTaskRunner : public TaskRunner,
                                            public decaf::lang::Runnable {
@@ -37,9 +44,8 @@ namespace threads {
         mutable decaf::util::concurrent::Mutex mutex;
         decaf::lang::Pointer<decaf::lang::Thread> thread;
 
-        bool threadTerminated;
-        bool pending;
-        bool shutDown;
+        std::atomic<DedicatedTaskRunnerState> state;
+        std::atomic<bool> pending;
         Task* task;
 
     private:

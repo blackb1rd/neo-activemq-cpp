@@ -18,6 +18,7 @@
 #include "CompositeTaskRunner.h"
 
 #include <memory>
+#include <atomic>
 
 #include <activemq/exceptions/ActiveMQException.h>
 
@@ -34,6 +35,12 @@ using namespace decaf::lang::exceptions;
 namespace activemq {
 namespace threads {
 
+    enum class TaskRunnerState : int {
+        RUNNING = 0,
+        STOPPING = 1,
+        STOPPED = 2
+    };
+
     class CompositeTaskRunnerImpl {
     private:
 
@@ -47,18 +54,16 @@ namespace threads {
 
         decaf::lang::Pointer<decaf::lang::Thread> thread;
 
-        bool threadTerminated;
-        bool pending;
-        bool shutdown;
+        std::atomic<TaskRunnerState> state;
+        std::atomic<bool> pending;
 
     public:
 
         CompositeTaskRunnerImpl() : tasks(),
                                     mutex(),
                                     thread(),
-                                    threadTerminated(false),
-                                    pending(false),
-                                    shutdown(false) {
+                                    state(TaskRunnerState::RUNNING),
+                                    pending(false) {
         }
 
     };
@@ -89,7 +94,8 @@ CompositeTaskRunner::~CompositeTaskRunner() {
 void CompositeTaskRunner::start() {
 
     synchronized(&impl->mutex) {
-        if (!impl->shutdown && !this->impl->thread->isAlive()) {
+        if (impl->state.load(std::memory_order_acquire) == TaskRunnerState::RUNNING &&
+            !this->impl->thread->isAlive()) {
             this->impl->thread->start();
             this->wakeup();
         }
@@ -113,43 +119,71 @@ bool CompositeTaskRunner::isStarted() const {
 ////////////////////////////////////////////////////////////////////////////////
 void CompositeTaskRunner::shutdown(long long timeout) {
 
+    // Phase 1: Signal shutdown
+    TaskRunnerState expected = TaskRunnerState::RUNNING;
+    if (!impl->state.compare_exchange_strong(expected, TaskRunnerState::STOPPING)) {
+        // Already stopping or stopped
+        return;
+    }
+
+    // Memory barrier to ensure state change is visible
+    std::atomic_thread_fence(std::memory_order_release);
+
+    // Wake up the thread
     synchronized(&impl->mutex) {
-        impl->shutdown = true;
-        impl->pending = true;
+        impl->pending.store(true, std::memory_order_release);
         impl->mutex.notifyAll();
     }
 
-    // Wait till the thread stops ( no need to wait if shutdown
-    // is called from thread that is shutting down)
-    if (Thread::currentThread() != this->impl->thread.get() && !impl->threadTerminated) {
-        this->impl->thread->join(timeout);
+    // Phase 2: Wait for thread to terminate
+    // (no need to wait if shutdown is called from thread that is shutting down)
+    if (Thread::currentThread() != this->impl->thread.get()) {
+        TaskRunnerState currentState = impl->state.load(std::memory_order_acquire);
+        if (currentState != TaskRunnerState::STOPPED) {
+            this->impl->thread->join(timeout);
+        }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void CompositeTaskRunner::shutdown() {
 
+    // Phase 1: Signal shutdown
+    TaskRunnerState expected = TaskRunnerState::RUNNING;
+    if (!impl->state.compare_exchange_strong(expected, TaskRunnerState::STOPPING)) {
+        // Already stopping or stopped
+        return;
+    }
+
+    // Memory barrier to ensure state change is visible
+    std::atomic_thread_fence(std::memory_order_release);
+
+    // Wake up the thread
     synchronized(&impl->mutex) {
-        impl->shutdown = true;
-        impl->pending = true;
+        impl->pending.store(true, std::memory_order_release);
         impl->mutex.notifyAll();
     }
 
-    // Wait till the thread stops ( no need to wait if shutdown
-    // is called from thread that is shutting down)
-    if (Thread::currentThread() != this->impl->thread.get() && !impl->threadTerminated) {
-        impl->thread->join();
+    // Phase 2: Wait for thread to terminate
+    // (no need to wait if shutdown is called from thread that is shutting down)
+    if (Thread::currentThread() != this->impl->thread.get()) {
+        TaskRunnerState currentState = impl->state.load(std::memory_order_acquire);
+        if (currentState != TaskRunnerState::STOPPED) {
+            impl->thread->join();
+        }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void CompositeTaskRunner::wakeup() {
 
+    // Check if we're shutting down
+    if (impl->state.load(std::memory_order_acquire) != TaskRunnerState::RUNNING) {
+        return;
+    }
+
     synchronized(&impl->mutex) {
-        if (impl->shutdown) {
-            return;
-        }
-        impl->pending = true;
+        impl->pending.store(true, std::memory_order_release);
         impl->mutex.notifyAll();
     }
 }
@@ -160,21 +194,27 @@ void CompositeTaskRunner::run() {
     try {
 
         while (true) {
+            // Check state with memory barrier
+            if (impl->state.load(std::memory_order_acquire) != TaskRunnerState::RUNNING) {
+                break;
+            }
+
             synchronized(&impl->mutex) {
-                impl->pending = false;
-                if (impl->shutdown) {
-                    return;
-                }
+                impl->pending.store(false, std::memory_order_release);
             }
 
             if (!this->iterate()) {
                 // wait to be notified.
                 synchronized(&impl->mutex) {
-                    if (impl->shutdown) {
-                        return;
+                    // Double-check state before waiting
+                    if (impl->state.load(std::memory_order_acquire) != TaskRunnerState::RUNNING) {
+                        break;
                     }
-                    while (!impl->pending && !impl->shutdown) {
-                        impl->mutex.wait();
+
+                    // Use timed wait to periodically check state
+                    while (!impl->pending.load(std::memory_order_acquire) &&
+                           impl->state.load(std::memory_order_acquire) == TaskRunnerState::RUNNING) {
+                        impl->mutex.wait(100); // 100ms timeout
                     }
                 }
             }
@@ -182,10 +222,12 @@ void CompositeTaskRunner::run() {
     }
     AMQ_CATCHALL_NOTHROW()
 
-    // Make sure we notify any waiting threads that thread
-    // has terminated.
+    // Mark as stopped with memory barrier
+    impl->state.store(TaskRunnerState::STOPPED, std::memory_order_release);
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+
+    // Notify any waiting threads
     synchronized(&impl->mutex) {
-        impl->threadTerminated = true;
         impl->mutex.notifyAll();
     }
 }

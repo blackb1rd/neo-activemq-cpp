@@ -36,6 +36,151 @@
 #include <mutex>
 #include <condition_variable>
 #include <stdexcept>
+#include <vector>
+
+#ifdef __linux__
+#include <execinfo.h>
+#include <signal.h>
+#include <unistd.h>
+#include <cxxabi.h>
+#include <dirent.h>
+#include <cstring>
+#include <sys/syscall.h>
+#endif
+
+#ifdef __linux__
+// Print stack trace with demangled symbols
+void printStackTrace(int threadId = 0) {
+    const int maxFrames = 2048;
+    void* buffer[maxFrames];
+
+    int numFrames = backtrace(buffer, maxFrames);
+    char** symbols = backtrace_symbols(buffer, numFrames);
+
+    if (threadId > 0) {
+        std::cerr << "\n=== Stack Trace for Thread " << threadId << " ===" << std::endl;
+    } else {
+        std::cerr << "\n=== Stack Trace ===" << std::endl;
+    }
+
+    if (symbols == nullptr) {
+        std::cerr << "Failed to get stack trace symbols" << std::endl;
+        return;
+    }
+
+    for (int i = 0; i < numFrames; i++) {
+        std::string frame(symbols[i]);
+        std::cerr << "#" << i << " ";
+
+        // Try to demangle C++ symbols
+        size_t start = frame.find('(');
+        size_t end = frame.find('+', start);
+
+        if (start != std::string::npos && end != std::string::npos) {
+            std::string mangled = frame.substr(start + 1, end - start - 1);
+            int status;
+            char* demangled = abi::__cxa_demangle(mangled.c_str(), nullptr, nullptr, &status);
+
+            if (status == 0 && demangled) {
+                std::cerr << frame.substr(0, start + 1) << demangled
+                         << frame.substr(end) << std::endl;
+                free(demangled);
+            } else {
+                std::cerr << frame << std::endl;
+            }
+        } else {
+            std::cerr << frame << std::endl;
+        }
+    }
+
+    free(symbols);
+    std::cerr << "===================" << std::endl;
+}
+
+// Thread-local storage to identify threads
+static thread_local int threadNumber = 0;
+static std::atomic<int> nextThreadNumber{0};
+
+// Signal handler for stack trace dumping
+void stackTraceSignalHandler(int sig) {
+    if (sig == SIGUSR1) {
+        printStackTrace(threadNumber);
+    }
+}
+
+// Setup signal handler for stack trace
+void setupStackTraceHandler() {
+    struct sigaction sa;
+    sa.sa_handler = stackTraceSignalHandler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGUSR1, &sa, nullptr);
+}
+
+// Enumerate all threads in the process
+std::vector<pid_t> getAllThreadIds() {
+    std::vector<pid_t> threadIds;
+    pid_t pid = getpid();
+
+    char taskPath[256];
+    snprintf(taskPath, sizeof(taskPath), "/proc/%d/task", pid);
+
+    DIR* dir = opendir(taskPath);
+    if (!dir) {
+        std::cerr << "Failed to open /proc/" << pid << "/task" << std::endl;
+        return threadIds;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (entry->d_type == DT_DIR) {
+            // Check if the name is a number (thread ID)
+            char* endptr;
+            long tid = strtol(entry->d_name, &endptr, 10);
+            if (*endptr == '\0' && tid > 0) {
+                threadIds.push_back(static_cast<pid_t>(tid));
+            }
+        }
+    }
+
+    closedir(dir);
+    return threadIds;
+}
+
+// Dump stack traces of all threads
+void dumpAllThreadStackTraces() {
+    std::cerr << "\n========================================" << std::endl;
+    std::cerr << "Dumping stack traces of all threads..." << std::endl;
+    std::cerr << "========================================" << std::endl;
+
+    std::vector<pid_t> threadIds = getAllThreadIds();
+
+    if (threadIds.empty()) {
+        std::cerr << "No threads found" << std::endl;
+        return;
+    }
+
+    std::cerr << "Found " << threadIds.size() << " thread(s)" << std::endl;
+
+    for (size_t i = 0; i < threadIds.size(); i++) {
+        pid_t tid = threadIds[i];
+        std::cerr << "\nThread " << (i + 1) << "/" << threadIds.size()
+                  << " (TID: " << tid << ")" << std::endl;
+
+        // Send signal to thread to dump its stack
+        if (syscall(SYS_tgkill, getpid(), tid, SIGUSR1) == 0) {
+            // Give thread time to print stack trace
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } else {
+            std::cerr << "Failed to send signal to thread " << tid << std::endl;
+        }
+    }
+
+    std::cerr << "\n========================================" << std::endl;
+    std::cerr << "End of stack traces" << std::endl;
+    std::cerr << "========================================" << std::endl;
+}
+#endif
 
 class TestRunner {
 private:
@@ -54,6 +199,10 @@ public:
 
     void start() {
         thread = std::thread([this]() {
+#ifdef __linux__
+            // Assign a thread number for identification in stack traces
+            threadNumber = ++nextThreadNumber;
+#endif
             try {
                 bool result = runner->run(testPath, false);
                 wasSuccessful.store(result);
@@ -94,6 +243,14 @@ public:
         return completed.load();
     }
 
+    void dumpStackTrace() {
+#ifdef __linux__
+        dumpAllThreadStackTraces();
+#else
+        std::cerr << "\nStack trace dumping not supported on this platform" << std::endl;
+#endif
+    }
+
     ~TestRunner() {
         if (thread.joinable()) {
             thread.detach();
@@ -102,6 +259,10 @@ public:
 };
 
 int main( int argc, char **argv ) {
+
+#ifdef __linux__
+    setupStackTraceHandler();
+#endif
 
     activemq::library::ActiveMQCPP::initializeLibrary();
 
@@ -209,6 +370,10 @@ int main( int argc, char **argv ) {
             if( !completed ) {
                 std::cerr << std::endl << "ERROR: Test execution timed out after "
                           << timeoutSeconds << " seconds" << std::endl;
+
+                // Dump stack traces of all threads before terminating
+                testRunner.dumpStackTrace();
+
                 std::cerr << "Forcibly terminating process due to timeout..." << std::endl;
                 if( useXMLOutputter ) {
                     outputFile.close();
@@ -218,8 +383,24 @@ int main( int argc, char **argv ) {
             }
 
             wasSuccessful = testRunner.getResult();
+
+            // If tests failed (but didn't timeout), dump stack traces
+            if( !wasSuccessful ) {
+                std::cerr << std::endl << "ERROR: Test execution failed" << std::endl;
+                testRunner.dumpStackTrace();
+            }
         } else {
             wasSuccessful = runner.run( testPath, false );
+
+            // If tests failed, dump stack traces
+            if( !wasSuccessful ) {
+                std::cerr << std::endl << "ERROR: Test execution failed" << std::endl;
+#ifdef __linux__
+                dumpAllThreadStackTraces();
+#else
+                std::cerr << "\nStack trace dumping not supported on this platform" << std::endl;
+#endif
+            }
         }
 
         if( useXMLOutputter ) {

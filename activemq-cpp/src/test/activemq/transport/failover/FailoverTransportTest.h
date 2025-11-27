@@ -72,7 +72,8 @@ namespace failover {
         CPPUNIT_TEST( testFailoverWithRandomizeBothOfflineBroker2ComesOnline );
         //CPPUNIT_TEST( testConnectsToPriorityOnceStarted );
         //CPPUNIT_TEST( testPriorityBackupRapidSwitchingOnRestore );
-        //CPPUNIT_TEST( testSimpleBrokerRestart );
+        CPPUNIT_TEST( testSimpleBrokerRestart );
+        CPPUNIT_TEST( testBrokerRestartWithProperSync );
         //CPPUNIT_TEST( testFuzzyBrokerAvailability );
         //CPPUNIT_TEST( testConnectsToPriorityAfterInitialBackupFails );
         CPPUNIT_TEST_SUITE_END();
@@ -115,6 +116,7 @@ namespace failover {
         void testConnectsToPriorityOnceStarted();
         void testPriorityBackupRapidSwitchingOnRestore();
         void testSimpleBrokerRestart();
+        void testBrokerRestartWithProperSync();
         void testFuzzyBrokerAvailability();
         void testConnectsToPriorityAfterInitialBackupFails();
 

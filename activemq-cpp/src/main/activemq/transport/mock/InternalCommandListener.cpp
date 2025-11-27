@@ -73,7 +73,7 @@ void InternalCommandListener::run() {
                 startedLatch.countDown();
 
                 while (inboundQueue.isEmpty() && !done) {
-                    inboundQueue.wait();
+                    inboundQueue.wait(100);  // Wait with 100ms timeout to periodically check done flag
                 }
 
                 if (done || transport == NULL) {

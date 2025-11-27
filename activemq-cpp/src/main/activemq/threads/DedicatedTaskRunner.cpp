@@ -28,7 +28,7 @@ using namespace decaf::lang::exceptions;
 
 ////////////////////////////////////////////////////////////////////////////////
 DedicatedTaskRunner::DedicatedTaskRunner(Task* task) :
-    mutex(), thread(), threadTerminated(false), pending(false), shutDown(false), task(task) {
+    mutex(), thread(), state(DedicatedTaskRunnerState::RUNNING), pending(false), task(task) {
 
     if (this->task == NULL) {
         throw NullPointerException(__FILE__, __LINE__, "Task passed was null");
@@ -49,7 +49,8 @@ DedicatedTaskRunner::~DedicatedTaskRunner() {
 void DedicatedTaskRunner::start() {
 
     synchronized(&mutex) {
-        if (!shutDown && !this->thread->isAlive()) {
+        if (state.load(std::memory_order_acquire) == DedicatedTaskRunnerState::RUNNING &&
+            !this->thread->isAlive()) {
             this->thread->start();
             this->wakeup();
         }
@@ -79,15 +80,26 @@ void DedicatedTaskRunner::shutdown(long long timeout) {
             return;
         }
 
-        shutDown = true;
-        pending = true;
+        // Phase 1: Signal shutdown
+        DedicatedTaskRunnerState expected = DedicatedTaskRunnerState::RUNNING;
+        if (!state.compare_exchange_strong(expected, DedicatedTaskRunnerState::STOPPING)) {
+            // Already stopping or stopped
+            return;
+        }
+
+        // Memory barrier
+        std::atomic_thread_fence(std::memory_order_release);
+
+        pending.store(true, std::memory_order_release);
         mutex.notifyAll();
     }
 
-    // Wait till the thread stops ( no need to wait if shutdown
-    // is called from thread that is shutting down)
-    if (Thread::currentThread() != this->thread.get() && !threadTerminated) {
-        this->thread->join(timeout);
+    // Phase 2: Wait till the thread stops
+    if (Thread::currentThread() != this->thread.get()) {
+        DedicatedTaskRunnerState currentState = state.load(std::memory_order_acquire);
+        if (currentState != DedicatedTaskRunnerState::STOPPED) {
+            this->thread->join(timeout);
+        }
     }
 }
 
@@ -100,26 +112,38 @@ void DedicatedTaskRunner::shutdown() {
             return;
         }
 
-        shutDown = true;
-        pending = true;
+        // Phase 1: Signal shutdown
+        DedicatedTaskRunnerState expected = DedicatedTaskRunnerState::RUNNING;
+        if (!state.compare_exchange_strong(expected, DedicatedTaskRunnerState::STOPPING)) {
+            // Already stopping or stopped
+            return;
+        }
+
+        // Memory barrier
+        std::atomic_thread_fence(std::memory_order_release);
+
+        pending.store(true, std::memory_order_release);
         mutex.notifyAll();
     }
 
-    // Wait till the thread stops ( no need to wait if shutdown
-    // is called from thread that is shutting down)
-    if (Thread::currentThread() != this->thread.get() && !threadTerminated) {
-        this->thread->join();
+    // Phase 2: Wait till the thread stops
+    if (Thread::currentThread() != this->thread.get()) {
+        DedicatedTaskRunnerState currentState = state.load(std::memory_order_acquire);
+        if (currentState != DedicatedTaskRunnerState::STOPPED) {
+            this->thread->join();
+        }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void DedicatedTaskRunner::wakeup() {
 
+    if (state.load(std::memory_order_acquire) != DedicatedTaskRunnerState::RUNNING) {
+        return;
+    }
+
     synchronized(&mutex) {
-        if (shutDown) {
-            return;
-        }
-        pending = true;
+        pending.store(true, std::memory_order_release);
         mutex.notifyAll();
     }
 }
@@ -131,22 +155,28 @@ void DedicatedTaskRunner::run() {
 
         while (true) {
 
+            // Check state with memory barrier
+            if (state.load(std::memory_order_acquire) != DedicatedTaskRunnerState::RUNNING) {
+                break;
+            }
+
             synchronized(&mutex) {
-                pending = false;
-                if (shutDown) {
-                    return;
-                }
+                pending.store(false, std::memory_order_release);
             }
 
             if (!this->task->iterate()) {
 
                 // wait to be notified.
                 synchronized(&mutex) {
-                    if (shutDown) {
-                        return;
+                    // Double-check state before waiting
+                    if (state.load(std::memory_order_acquire) != DedicatedTaskRunnerState::RUNNING) {
+                        break;
                     }
-                    while (!pending && !shutDown) {
-                        mutex.wait();
+
+                    // Use timed wait to periodically check state
+                    while (!pending.load(std::memory_order_acquire) &&
+                           state.load(std::memory_order_acquire) == DedicatedTaskRunnerState::RUNNING) {
+                        mutex.wait(100); // 100ms timeout
                     }
                 }
             }
@@ -155,10 +185,12 @@ void DedicatedTaskRunner::run() {
     }
     AMQ_CATCHALL_NOTHROW()
 
-    // Make sure we notify any waiting threads that thread
-    // has terminated.
+    // Mark as stopped with memory barrier
+    state.store(DedicatedTaskRunnerState::STOPPED, std::memory_order_release);
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+
+    // Notify any waiting threads
     synchronized(&mutex) {
-        threadTerminated = true;
         mutex.notifyAll();
     }
 }

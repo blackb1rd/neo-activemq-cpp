@@ -32,60 +32,61 @@ void Atomics::shutdown() {
 
 ////////////////////////////////////////////////////////////////////////////////
 bool Atomics::compareAndSet32(volatile int* target, int expect, int update) {
+    // Use std::atomic for cross-platform support (works on GCC, Clang, MSVC)
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->compare_exchange_strong(expect, update);
+    return atomic_target->compare_exchange_strong(expect, update, std::memory_order_seq_cst, std::memory_order_seq_cst);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 bool Atomics::compareAndSet(volatile void** target, void* expect, void* update) {
     std::atomic<void*>* atomic_target = reinterpret_cast<std::atomic<void*>*>(const_cast<void**>(target));
-    return atomic_target->compare_exchange_strong(expect, update);
+    return atomic_target->compare_exchange_strong(expect, update, std::memory_order_seq_cst, std::memory_order_seq_cst);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndSet(volatile int* target, int newValue) {
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->exchange(newValue);
+    return atomic_target->exchange(newValue, std::memory_order_seq_cst);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void* Atomics::getAndSet(volatile void** target, void* newValue) {
     std::atomic<void*>* atomic_target = reinterpret_cast<std::atomic<void*>*>(const_cast<void**>(target));
-    return atomic_target->exchange(newValue);
+    return atomic_target->exchange(newValue, std::memory_order_seq_cst);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndIncrement(volatile int* target) {
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->fetch_add(1);
+    return atomic_target->fetch_add(1, std::memory_order_seq_cst);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndDecrement(volatile int* target) {
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->fetch_sub(1);
+    return atomic_target->fetch_sub(1, std::memory_order_seq_cst);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::getAndAdd(volatile int* target, int delta) {
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->fetch_add(delta);
+    return atomic_target->fetch_add(delta, std::memory_order_seq_cst);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::addAndGet(volatile int* target, int delta) {
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->fetch_add(delta) + delta;
+    return atomic_target->fetch_add(delta, std::memory_order_seq_cst) + delta;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::incrementAndGet(volatile int* target) {
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->fetch_add(1) + 1;
+    return atomic_target->fetch_add(1, std::memory_order_seq_cst) + 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 int Atomics::decrementAndGet(volatile int* target) {
     std::atomic<int>* atomic_target = reinterpret_cast<std::atomic<int>*>(const_cast<int*>(target));
-    return atomic_target->fetch_sub(1) - 1;
+    return atomic_target->fetch_sub(1, std::memory_order_seq_cst) - 1;
 }

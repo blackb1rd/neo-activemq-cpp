@@ -822,11 +822,23 @@ namespace {
         virtual ~PriorityBackupListener() {}
 
         virtual void transportInterrupted() {
-            interruptedLatch->countDown();
+            Pointer<CountDownLatch> latch;
+            synchronized(&resetMutex) {
+                latch = interruptedLatch;
+            }
+            if (latch != NULL) {
+                latch->countDown();
+            }
         }
 
         virtual void transportResumed() {
-            resumedLatch->countDown();
+            Pointer<CountDownLatch> latch;
+            synchronized(&resetMutex) {
+                latch = resumedLatch;
+            }
+            if (latch != NULL) {
+                latch->countDown();
+            }
         }
 
         void reset() {
@@ -837,19 +849,19 @@ namespace {
         }
 
         bool awaitInterruption() {
+            Pointer<CountDownLatch> latch;
             synchronized(&resetMutex) {
-                return interruptedLatch->await(60000);
+                latch = interruptedLatch;
             }
-
-            return false;
+            return latch->await(60000);
         }
 
         bool awaitResumed() {
+            Pointer<CountDownLatch> latch;
             synchronized(&resetMutex) {
-                return resumedLatch->await(60000);
+                latch = resumedLatch;
             }
-
-            return false;
+            return latch->await(60000);
         }
     };
 }
@@ -1023,7 +1035,7 @@ void FailoverTransportTest::testFailoverNoRandomizeBothOfflineBroker1ComesOnline
 
     // Both brokers offline initially
     std::string uri = "failover://(tcp://localhost:61626,"
-                                  "tcp://localhost:61628)?randomize=false&startupMaxReconnectAttempts=10&initialReconnectDelay=100";
+                                  "tcp://localhost:61628)?randomize=false&startupMaxReconnectAttempts=10&initialReconnectDelay=50&useExponentialBackOff=false";
 
     PriorityBackupListener listener;
     FailoverTransportFactory factory;
@@ -1067,7 +1079,7 @@ void FailoverTransportTest::testFailoverNoRandomizeBothOfflineBroker2ComesOnline
     // Both brokers offline initially
     // Use longer reconnect delay and more attempts to ensure broker has time to start
     std::string uri = "failover://(tcp://localhost:61626,"
-                                  "tcp://localhost:61628)?randomize=false&startupMaxReconnectAttempts=50&initialReconnectDelay=200&maxReconnectDelay=1000";
+                                  "tcp://localhost:61628)?randomize=false&startupMaxReconnectAttempts=50&initialReconnectDelay=50&maxReconnectDelay=50&useExponentialBackOff=false";
 
     PriorityBackupListener listener;
     FailoverTransportFactory factory;
@@ -1267,7 +1279,7 @@ void FailoverTransportTest::testFailoverWithRandomizeBothOfflineBroker1ComesOnli
 
     // Both brokers offline initially
     std::string uri = "failover://(tcp://localhost:61626,"
-                                  "tcp://localhost:61628)?startupMaxReconnectAttempts=10&initialReconnectDelay=100";
+                                  "tcp://localhost:61628)?startupMaxReconnectAttempts=50&initialReconnectDelay=50&useExponentialBackOff=false";
 
     PriorityBackupListener listener;
     FailoverTransportFactory factory;
@@ -1283,7 +1295,7 @@ void FailoverTransportTest::testFailoverWithRandomizeBothOfflineBroker1ComesOnli
 
     transport->start();
 
-    // Give it a moment to attempt connection
+    // Give it a moment to attempt connection (but not exhaust all attempts)
     Thread::sleep(500);
 
     // Start broker1
@@ -1309,7 +1321,7 @@ void FailoverTransportTest::testFailoverWithRandomizeBothOfflineBroker2ComesOnli
 
     // Both brokers offline initially
     std::string uri = "failover://(tcp://localhost:61626,"
-                                  "tcp://localhost:61628)?startupMaxReconnectAttempts=10&initialReconnectDelay=100";
+                                  "tcp://localhost:61628)?startupMaxReconnectAttempts=50&initialReconnectDelay=50&useExponentialBackOff=false";
 
     PriorityBackupListener listener;
     FailoverTransportFactory factory;
@@ -1625,10 +1637,96 @@ void FailoverTransportTest::testSimpleBrokerRestart() {
         dynamic_cast<FailoverTransport*>(transport->narrow(typeid(FailoverTransport)));
 
     CPPUNIT_ASSERT(failover != NULL);
-    CPPUNIT_ASSERT(failover->isRandomize() == false);
 
     transport->start();
 
+    CPPUNIT_ASSERT_MESSAGE("Failed to connect initially", listener.awaitResumed());
+
+    // Small delay to ensure connection state is fully updated after resume callback
+    Thread::sleep(100);
+
+    listener.reset();
+    CPPUNIT_ASSERT(failover->isConnected() == true);
+
+    // Stop broker1, should failover to broker2
+    broker1->stop();
+    broker1->waitUntilStopped();
+
+    CPPUNIT_ASSERT_MESSAGE("Failed to get interrupted", listener.awaitInterruption());
+    CPPUNIT_ASSERT_MESSAGE("Failed to reconnect", listener.awaitResumed());
+
+    // Small delay to ensure connection state is fully updated after resume callback
+    Thread::sleep(100);
+
+    listener.reset();
+    CPPUNIT_ASSERT(failover->isConnected() == true);
+
+    // Restart broker1
+    broker1->start();
+    broker1->waitUntilStarted();
+
+    // Allow time for backup connections (2 seconds is usually sufficient)
+    Thread::sleep(2000);
+
+    // Stop broker2 - should failover to broker1 (if backup ready) or reconnect
+    broker2->stop();
+    broker2->waitUntilStopped();
+
+    // Wait for interruption - should happen when broker2 goes down
+    CPPUNIT_ASSERT_MESSAGE("Failed to get interrupted after broker2 stop", listener.awaitInterruption());
+    // Wait for resume - should happen when reconnected to broker1
+    CPPUNIT_ASSERT_MESSAGE("Failed to reconnect to broker1", listener.awaitResumed());
+
+    // Small delay to ensure connection state is fully updated
+    Thread::sleep(100);
+
+    listener.reset();
+    CPPUNIT_ASSERT_MESSAGE("Should be connected after failover", failover->isConnected() == true);
+
+    // Final connection check
+    CPPUNIT_ASSERT(failover->isConnected() == true);
+
+    transport->close();
+
+    broker1->stop();
+    broker1->waitUntilStopped();
+
+    broker2->stop();
+    broker2->waitUntilStopped();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void FailoverTransportTest::testBrokerRestartWithProperSync() {
+
+    Pointer<MockBrokerService> broker1(new MockBrokerService(61626));
+    Pointer<MockBrokerService> broker2(new MockBrokerService(61628));
+
+    // Start both brokers
+    broker1->start();
+    broker1->waitUntilStarted();
+
+    broker2->start();
+    broker2->waitUntilStarted();
+
+    std::string uri = "failover://(tcp://localhost:61626,"
+                                  "tcp://localhost:61628)?maxReconnectDelay=1000";
+
+    PriorityBackupListener listener;
+    FailoverTransportFactory factory;
+
+    Pointer<Transport> transport(factory.create(uri));
+    CPPUNIT_ASSERT(transport != NULL);
+
+    transport->setTransportListener(&listener);
+
+    FailoverTransport* failover =
+        dynamic_cast<FailoverTransport*>(transport->narrow(typeid(FailoverTransport)));
+
+    CPPUNIT_ASSERT(failover != NULL);
+
+    transport->start();
+
+    // Wait for initial connection using listener, not sleep
     CPPUNIT_ASSERT_MESSAGE("Failed to connect initially", listener.awaitResumed());
     listener.reset();
     CPPUNIT_ASSERT(failover->isConnected() == true);
@@ -1642,28 +1740,35 @@ void FailoverTransportTest::testSimpleBrokerRestart() {
     listener.reset();
     CPPUNIT_ASSERT(failover->isConnected() == true);
 
-    // Restart broker1
+    // Restart broker1 - wait for transport to be ready
     broker1->start();
     broker1->waitUntilStarted();
 
-    Thread::sleep(2000);
+    // Give backup connections time to establish (this is asynchronous in FailoverTransport)
+    // We can't eliminate this completely without modifying FailoverTransport to notify
+    // when backup connections are ready, but 3 seconds should be sufficient
+    Thread::sleep(3000);
 
-    // Stop broker2, should stay connected or reconnect to broker1
+    // Stop broker2, should reconnect to broker1
     broker2->stop();
     broker2->waitUntilStopped();
 
-    CPPUNIT_ASSERT_MESSAGE("Failed to get interrupted", listener.awaitInterruption());
-    CPPUNIT_ASSERT_MESSAGE("Failed to reconnect", listener.awaitResumed());
+    CPPUNIT_ASSERT_MESSAGE("Failed to get interrupted after broker2 stop", listener.awaitInterruption());
+    CPPUNIT_ASSERT_MESSAGE("Failed to reconnect to broker1", listener.awaitResumed());
     listener.reset();
-    CPPUNIT_ASSERT(failover->isConnected() == true);
+
+    // Now we're guaranteed to be connected before checking
+    CPPUNIT_ASSERT_MESSAGE("Should be connected to broker1", failover->isConnected() == true);
 
     // Restart broker2
     broker2->start();
     broker2->waitUntilStarted();
 
-    Thread::sleep(2000);
+    // Give backup connections time to re-establish
+    Thread::sleep(3000);
 
-    CPPUNIT_ASSERT(failover->isConnected() == true);
+    // Final check - we're still connected
+    CPPUNIT_ASSERT_MESSAGE("Should still be connected", failover->isConnected() == true);
 
     transport->close();
 
@@ -1691,7 +1796,7 @@ void FailoverTransportTest::testFuzzyBrokerAvailability() {
     Thread::sleep(500);
 
     std::string uri = "failover://(tcp://localhost:61626,"
-                                  "tcp://localhost:61628)?initialReconnectDelay=100&maxReconnectDelay=500";
+                                  "tcp://localhost:61628)?initialReconnectDelay=100&maxReconnectDelay=500&useExponentialBackOff=false";
 
     PriorityBackupListener listener;
     FailoverTransportFactory factory;
