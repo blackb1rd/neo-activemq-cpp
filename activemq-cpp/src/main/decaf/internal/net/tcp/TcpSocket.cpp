@@ -23,6 +23,7 @@
 
 #include <decaf/net/SocketError.h>
 #include <decaf/net/SocketOptions.h>
+#include <decaf/net/SocketTimeoutException.h>
 #include <decaf/lang/Character.h>
 #include <decaf/lang/exceptions/UnsupportedOperationException.h>
 #include <decaf/util/concurrent/atomic/AtomicBoolean.h>
@@ -195,6 +196,11 @@ void TcpSocket::accept(SocketImpl* socket) {
         } while (result == APR_EINTR);
 
         if (result != APR_SUCCESS) {
+            // Check if this was a timeout
+            if (result == APR_TIMEUP) {
+                throw SocketTimeoutException(__FILE__, __LINE__,
+                    "ServerSocket::accept - timeout");
+            }
             // Capture error string immediately to avoid race conditions during exception construction
             std::string errorString = SocketError::getErrorString();
             throw SocketException(__FILE__, __LINE__,

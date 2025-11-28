@@ -27,6 +27,7 @@
 #include <decaf/net/Socket.h>
 #include <decaf/net/SocketFactory.h>
 #include <decaf/net/ServerSocket.h>
+#include <decaf/net/SocketTimeoutException.h>
 #include <decaf/io/InputStream.h>
 #include <decaf/io/OutputStream.h>
 #include <decaf/util/Random.h>
@@ -68,6 +69,7 @@ namespace {
 
         TestServer() : Thread(), done(false), error(false), server(), started(1), rand() {
             server.reset(new ServerSocket(0));
+            server->setSoTimeout(100); // 100ms timeout for quick shutdown response
 
             Properties properties;
             this->wireFormat.reset(new OpenWireFormat(properties));
@@ -92,13 +94,33 @@ namespace {
         }
 
         void waitUntilStopped() {
+            // Thread should exit cleanly now that done is set and socket timeout allows periodic checks
             this->join();
         }
 
         void stop() {
             try {
                 done = true;
-                server->close();
+
+                // On Windows, closing the socket doesn't always interrupt accept()
+                // Unblock it by connecting to it BEFORE closing
+                try {
+                    int port = getLocalPort();
+                    if (port > 0 && server.get() != NULL) {
+                        Pointer<Socket> wakeupSocket(SocketFactory::getDefault()->createSocket());
+                        try {
+                            wakeupSocket->connect("127.0.0.1", port, 100);
+                            wakeupSocket->close();
+                        } catch (...) {}
+                    }
+                } catch (...) {}
+
+                // Now close the server socket
+                if (server.get() != NULL) {
+                    try {
+                        server->close();
+                    } catch (...) {}
+                }
             } catch (...) {}
         }
 
@@ -108,32 +130,51 @@ namespace {
                 started.countDown();
 
                 while (!done) {
+                    try {
+                        std::unique_ptr<Socket> socket(server->accept());
+                        socket->setSoLinger(false, 0);
 
-                    std::unique_ptr<Socket> socket(server->accept());
-                    socket->setSoLinger(false, 0);
+                        // Immediate fail sometimes.
+                        if (rand.nextBoolean()) {
+                            socket->close();
+                            continue;
+                        }
 
-                    // Immediate fail sometimes.
-                    if (rand.nextBoolean()) {
+                        OutputStream* os = socket->getOutputStream();
+                        DataOutputStream dataOut(os);
+
+                        InputStream* is = socket->getInputStream();
+                        DataInputStream dataIn(is);
+
+                        // random sleep before terminate
+                        TimeUnit::MILLISECONDS.sleep(rand.nextInt(20));
+
                         socket->close();
+                    } catch (SocketTimeoutException& ste) {
+                        // Timeout on accept - check done flag and continue
+                        // This is expected and allows periodic checking of done flag
                         continue;
+                    } catch (IOException& io) {
+                        // IOException during accept usually means socket was closed
+                        // Check if we're shutting down
+                        if (done) {
+                            break;
+                        }
+                        // Otherwise it's an actual error
+                        error = true;
+                        break;
                     }
-
-                    OutputStream* os = socket->getOutputStream();
-                    DataOutputStream dataOut(os);
-
-                    InputStream* is = socket->getInputStream();
-                    DataInputStream dataIn(is);
-
-                    // random sleep before terminate
-                    TimeUnit::MILLISECONDS.sleep(rand.nextInt(20));
-
-                    socket->close();
                 }
 
             } catch (IOException& ex) {
-                error = true;
+                // Only set error if not shutting down
+                if (!done) {
+                    error = true;
+                }
             } catch (...) {
-                error = true;
+                if (!done) {
+                    error = true;
+                }
             }
         }
     };
