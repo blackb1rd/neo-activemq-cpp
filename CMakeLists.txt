@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(activemq-cpp LANGUAGES C CXX)
+project(neoactivemq-cpp LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -185,6 +185,7 @@ include(GNUInstallDirs)
 
 # Install libraries
 install(TARGETS decaf activemq_core activemq_cms
+	EXPORT neoactivemq-cpp-targets
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -197,5 +198,36 @@ install(DIRECTORY
 	${CMAKE_SOURCE_DIR}/activemq-cpp/src/main/decaf
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 	FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
+
+# Install CMake config files for find_package() support
+include(CMakePackageConfigHelpers)
+
+# Generate the config file that includes the exports
+configure_package_config_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/neoactivemq-cpp-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/neoactivemq-cpp-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/neoactivemq-cpp
+)
+
+# Generate the version file for the config file
+write_basic_package_version_file(
+	${CMAKE_CURRENT_BINARY_DIR}/neoactivemq-cpp-config-version.cmake
+	VERSION 4.0.0
+	COMPATIBILITY SameMajorVersion
+)
+
+# Install the configuration files
+install(FILES
+	${CMAKE_CURRENT_BINARY_DIR}/neoactivemq-cpp-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/neoactivemq-cpp-config-version.cmake
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/neoactivemq-cpp
+)
+
+# Export the targets to a script
+install(EXPORT neoactivemq-cpp-targets
+	FILE neoactivemq-cpp-targets.cmake
+	NAMESPACE neoactivemq-cpp::
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/neoactivemq-cpp
 )
 

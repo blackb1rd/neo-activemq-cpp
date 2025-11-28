@@ -32,10 +32,14 @@ else()
   add_library(decaf STATIC ${DECAF_SOURCES})
 endif()
 
+# Create alias for namespaced usage
+add_library(neoactivemq-cpp::decaf ALIAS decaf)
+
 target_include_directories(decaf
   PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 if(AMQCPP_USE_SSL)

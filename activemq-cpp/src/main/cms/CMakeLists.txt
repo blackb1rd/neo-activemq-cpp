@@ -85,10 +85,14 @@ else()
   add_library(activemq_cms STATIC ${CMS_SOURCES})
 endif()
 
+# Create alias for namespaced usage
+add_library(neoactivemq-cpp::activemq_cms ALIAS activemq_cms)
+
 target_include_directories(activemq_cms
   PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(activemq_cms PUBLIC activemq_core decaf)
