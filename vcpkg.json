@@ -1,6 +1,6 @@
 {
   "name": "neoactivemq-cpp",
-  "version-string": "4.0.0",
+  "version-string": "1.0.0",
   "description": "vcpkg manifest for building activemq-cpp with recommended deps",
   "dependencies": [
     "openssl",

@@ -220,7 +220,7 @@ configure_package_config_file(
 # Generate the version file for the config file
 write_basic_package_version_file(
 	${CMAKE_CURRENT_BINARY_DIR}/neoactivemq-cpp-config-version.cmake
-	VERSION 4.0.0
+	VERSION 1.0.0
 	COMPATIBILITY SameMajorVersion
 )
 
