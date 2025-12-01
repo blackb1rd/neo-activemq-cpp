@@ -22,6 +22,13 @@
 
 #include <activemq/transport/tcp/TcpTransport.h>
 
+// Forward declarations
+namespace decaf {
+namespace net {
+namespace ssl {
+    class SSLSocket;
+}}}
+
 namespace activemq {
 namespace transport {
 namespace tcp {
@@ -35,6 +42,8 @@ namespace tcp {
      */
     class AMQCPP_API SslTransport : public TcpTransport {
     private:
+
+        decaf::net::ssl::SSLSocket* sslSocket;
 
         SslTransport(const SslTransport&);
         SslTransport& operator=(const SslTransport&);
@@ -65,6 +74,13 @@ namespace tcp {
          * {@inheritDoc}
          */
         virtual void configureSocket(decaf::net::Socket* socket);
+
+        /**
+         * {@inheritDoc}
+         *
+         * Overridden to perform SSL handshake after socket connection and configuration.
+         */
+        virtual void beforeNextIsStarted();
 
     };
 

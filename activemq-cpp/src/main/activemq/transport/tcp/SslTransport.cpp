@@ -39,7 +39,7 @@ using namespace decaf::lang::exceptions;
 
 ////////////////////////////////////////////////////////////////////////////////
 SslTransport::SslTransport(const Pointer<Transport> next, const decaf::net::URI& location) :
-    TcpTransport(next, location) {
+    TcpTransport(next, location), sslSocket(NULL) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,6 +74,9 @@ void SslTransport::configureSocket(Socket* socket) {
                 "Socket passed was not an SSLSocket instance.");
         }
 
+        // Store reference to SSL socket for later handshake
+        this->sslSocket = sslSocket;
+
         SSLParameters params = sslSocket->getSSLParameters();
 
         std::vector<std::string> serverNames;
@@ -89,4 +92,22 @@ void SslTransport::configureSocket(Socket* socket) {
     DECAF_CATCH_RETHROW(SocketException)
     DECAF_CATCH_EXCEPTION_CONVERT(Exception, SocketException)
     DECAF_CATCHALL_THROW(SocketException)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void SslTransport::beforeNextIsStarted() {
+
+    try {
+        // First, let the parent TcpTransport complete its connection logic
+        TcpTransport::beforeNextIsStarted();
+
+        // Now that the socket is connected and fully configured, perform the SSL handshake
+        // This ensures the SSL connection is fully established before any I/O operations begin
+        if (this->sslSocket != NULL && this->sslSocket->isConnected() && !this->sslSocket->isClosed()) {
+            this->sslSocket->startHandshake();
+        }
+    }
+    DECAF_CATCH_RETHROW(IOException)
+    DECAF_CATCH_EXCEPTION_CONVERT(Exception, IOException)
+    DECAF_CATCHALL_THROW(IOException)
 }

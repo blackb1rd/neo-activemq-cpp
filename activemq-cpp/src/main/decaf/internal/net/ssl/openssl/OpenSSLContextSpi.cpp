@@ -43,9 +43,16 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
+#include <openssl/x509.h>
 #define SSL_LOCK_MUTEX CRYPTO_LOCK
 #else
 #define SSL_LOCK_MUTEX 1
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#include <wincrypt.h>
+#pragma comment(lib, "crypt32.lib")
 #endif
 
 using namespace decaf;
@@ -230,6 +237,48 @@ void OpenSSLContextSpi::providerInit( SecureRandom* random ) {
 
         // Load the Library default CA paths and Context Options.
         SSL_CTX_set_default_verify_paths( this->data->openSSLContext );
+
+#ifdef _WIN32
+        // On Windows, also load certificates from the Windows Certificate Store
+        // This allows OpenSSL to trust certificates that Windows trusts (like Amazon's certificates)
+        HCERTSTORE hStore = CertOpenSystemStoreA(NULL, "ROOT");
+        if (hStore) {
+            X509_STORE* store = SSL_CTX_get_cert_store(this->data->openSSLContext);
+            PCCERT_CONTEXT pContext = NULL;
+            int certsAdded = 0;
+
+            while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) != NULL) {
+                const unsigned char* encoded = pContext->pbCertEncoded;
+                X509* x509 = d2i_X509(NULL, &encoded, pContext->cbCertEncoded);
+                if (x509) {
+                    if (X509_STORE_add_cert(store, x509) == 1) {
+                        certsAdded++;
+                    }
+                    X509_free(x509);
+                }
+            }
+
+            CertCloseStore(hStore, 0);
+
+            // Also load intermediate certificates from CA store
+            hStore = CertOpenSystemStoreA(NULL, "CA");
+            if (hStore) {
+                pContext = NULL;
+                while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) != NULL) {
+                    const unsigned char* encoded = pContext->pbCertEncoded;
+                    X509* x509 = d2i_X509(NULL, &encoded, pContext->cbCertEncoded);
+                    if (x509) {
+                        if (X509_STORE_add_cert(store, x509) == 1) {
+                            certsAdded++;
+                        }
+                        X509_free(x509);
+                    }
+                }
+                CertCloseStore(hStore, 0);
+            }
+        }
+#endif
+
         SSL_CTX_set_options( this->data->openSSLContext, SSL_OP_ALL | SSL_OP_NO_SSLv2 );
         SSL_CTX_set_mode( this->data->openSSLContext, SSL_MODE_AUTO_RETRY );
 

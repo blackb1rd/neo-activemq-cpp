@@ -54,6 +54,7 @@ set(TEST_SRCS
   activemq/transport/inactivity/InactivityMonitorTest.cpp
   activemq/transport/mock/MockTransportFactoryTest.cpp
   activemq/transport/tcp/TcpTransportTest.cpp
+  activemq/transport/tcp/SslTransportTest.cpp
   activemq/util/ActiveMQMessageTransformationTest.cpp
   activemq/util/AdvisorySupportTest.cpp
   activemq/util/IdGeneratorTest.cpp
@@ -134,6 +135,7 @@ set(TEST_SRCS
   decaf/internal/net/URIEncoderDecoderTest.cpp
   decaf/internal/net/URIHelperTest.cpp
   decaf/internal/net/ssl/DefaultSSLSocketFactoryTest.cpp
+  decaf/internal/net/ssl/openssl/OpenSSLSocketTest.cpp
   decaf/internal/nio/BufferFactoryTest.cpp
   decaf/internal/nio/ByteArrayBufferTest.cpp
   decaf/internal/nio/CharArrayBufferTest.cpp

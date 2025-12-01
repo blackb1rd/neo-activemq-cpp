@@ -369,6 +369,13 @@ void TcpSocket::connect(const std::string& hostname, int port, int timeout) {
         int cres_native = ::connect((SOCKET)osSock, (const struct sockaddr*)&impl->remoteAddress->sa, (int)impl->remoteAddress->salen);
         if (cres_native == 0) {
             connectSucceeded = true;
+        } else {
+            // On Windows, non-blocking connect returns SOCKET_ERROR with WSAEWOULDBLOCK
+            int err = WSAGetLastError();
+            if (err != WSAEWOULDBLOCK) {
+                // Unexpected error - connection failed immediately
+                throw SocketException(__FILE__, __LINE__, SocketError::getErrorString().c_str());
+            }
         }
 
     #else

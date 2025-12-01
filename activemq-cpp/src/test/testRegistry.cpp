@@ -112,6 +112,9 @@ CPPUNIT_TEST_SUITE_REGISTRATION( activemq::transport::failover::FailoverTranspor
 #include <activemq/transport/tcp/TcpTransportTest.h>
 CPPUNIT_TEST_SUITE_REGISTRATION( activemq::transport::tcp::TcpTransportTest );
 
+#include <activemq/transport/tcp/SslTransportTest.h>
+CPPUNIT_TEST_SUITE_REGISTRATION( activemq::transport::tcp::SslTransportTest );
+
 #include <activemq/transport/correlator/ResponseCorrelatorTest.h>
 CPPUNIT_TEST_SUITE_REGISTRATION( activemq::transport::correlator::ResponseCorrelatorTest );
 
@@ -169,6 +172,9 @@ CPPUNIT_TEST_SUITE_REGISTRATION( decaf::internal::util::TimerTaskHeapTest );
 
 #include <decaf/internal/net/ssl/DefaultSSLSocketFactoryTest.h>
 CPPUNIT_TEST_SUITE_REGISTRATION( decaf::internal::net::ssl::DefaultSSLSocketFactoryTest );
+
+#include <decaf/internal/net/ssl/openssl/OpenSSLSocketTest.h>
+CPPUNIT_TEST_SUITE_REGISTRATION( decaf::internal::net::ssl::openssl::OpenSSLSocketTest );
 
 #include <decaf/internal/nio/ByteArrayBufferTest.h>
 CPPUNIT_TEST_SUITE_REGISTRATION( decaf::internal::nio::ByteArrayBufferTest );
